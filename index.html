@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMA Admin V28 (Town Overrides)</title>
+    <title>SIMA Admin V27 (Database Repair)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #f3f4f6; --panel: #ffffff; --text: #1f2937; --primary: #2563eb; --border: #e5e7eb; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
-        #app { display: flex; gap: 20px; max-width: 1600px; margin: 0 auto; height: 90vh; }
-        .sidebar { width: 250px; background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; overflow-y: auto; }
+        #app { display: flex; gap: 20px; max-width: 1400px; margin: 0 auto; height: 90vh; }
+        .sidebar { width: 250px; background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
         .nav-btn { text-align: left; background: none; border: none; padding: 12px; border-radius: 8px; font-weight: 600; color: #4b5563; cursor: pointer; transition: 0.2s; }
         .nav-btn.active { background: var(--primary); color: white; }
         .main { flex: 1; background: var(--panel); border-radius: 12px; border: 1px solid var(--border); padding: 30px; overflow-y: auto; }
@@ -17,8 +17,12 @@
         .card { border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #fff; }
         label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #374151; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-family: inherit; margin-bottom: 15px; box-sizing: border-box; }
-        button { padding: 10px 20px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; color: white; }
-        .btn-primary { background: var(--primary); } .btn-danger { background: #ef4444; } .btn-success { background: #10b981; } .btn-secondary { background: #f3f4f6; color: #1f2937; }
+        button { padding: 10px 20px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-secondary { background: #f3f4f6; color: #1f2937; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f3f4f6; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         #toast { position: fixed; bottom: 30px; right: 30px; background: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; display: none; }
     </style>
@@ -29,108 +33,122 @@
     <div class="sidebar">
         <h2 style="margin:0 0 20px 0">SIMA Admin</h2>
         <button class="nav-btn active" onclick="setTab('news')">News & Blog</button>
-        <button class="nav-btn" onclick="setTab('towns')">Town Forecasts</button>
         <button class="nav-btn" onclick="setTab('alerts')">Alerts</button>
         <button class="nav-btn" onclick="setTab('storm')">StormCast</button>
         <button class="nav-btn" onclick="setTab('snow')">SnowCast</button>
         <button class="nav-btn" onclick="setTab('sig')">Sig. Weather</button>
         <button class="nav-btn" onclick="setTab('drought')">DroughtCast</button>
-        <button class="nav-btn" onclick="setTab('archive')" style="margin-top:auto; background:#374151;">Archives</button>
+        <button class="nav-btn" onclick="setTab('archive')" style="margin-top:auto; background:#374151; color:white;">Archives</button>
     </div>
 
     <div class="main">
         
         <!-- NEWS TAB -->
         <div id="tab-news" class="tab active">
-            <h1>News Manager</h1>
-            <div class="card">
-                <button class="btn-danger" onclick="resetNewsDB()" style="margin-bottom:15px; font-size:0.8rem;">⚠ Reset Database (Fixes Errors)</button>
-                <div class="form-group"><label>Title</label><input id="news-title"></div>
+            <h1 style="margin-top:0;">News Manager</h1>
+            
+            <!-- DATABASE REPAIR TOOL -->
+            <div class="card" style="background:#fff5f5; border-color:#fed7d7;">
+                <h3 style="color:#c53030; margin-top:0;">Troubleshooting</h3>
+                <p style="font-size:0.9rem; color:#c53030;">If posts are not showing on the website, click this button to reset the database structure.</p>
+                <button class="btn-danger" onclick="resetNewsDB()">⚠ RESET NEWS DATABASE (Fixes Display Issues)</button>
+            </div>
+
+            <div class="card" style="background:#f9fafb; border:2px solid var(--primary);">
+                <h3>✍️ Write New Post</h3>
+                <label>Headline</label>
+                <input id="news-title" placeholder="Enter title...">
                 <div class="grid-2">
-                    <div><label>Tag</label><select id="news-tag"><option>General</option><option>Severe Weather</option><option>Analysis</option></select></div>
+                    <div><label>Category</label><select id="news-tag"><option>General</option><option>Severe Weather</option><option>Analysis</option><option>Update</option></select></div>
                     <div><label>Image</label><input type="file" id="news-img"></div>
                 </div>
-                <label>Content</label><textarea id="news-content" rows="6"></textarea>
+                <label>Content (HTML allowed)</label>
+                <textarea id="news-content" rows="6" placeholder="Type content here..."></textarea>
                 <button class="btn-success" style="width:100%" onclick="addNewsItem()">Add Post</button>
             </div>
+            <h3>Live Posts</h3>
             <div id="news-list-container" class="card">Loading...</div>
-        </div>
-
-        <!-- TOWN FORECASTS TAB -->
-        <div id="tab-towns" class="tab">
-            <h1>Town Forecast Overrides</h1>
-            <p style="color:#666; margin-bottom:20px;">Manually override computer guidance for specific towns. Overrides auto-expire after 24 hours.</p>
-            
-            <div class="card" style="background:#f8fafc; border: 2px solid var(--primary);">
-                <div class="grid-2">
-                    <div>
-                        <label>1. Select Town</label>
-                        <select id="tf-town">
-                            <option>Nelson</option><option>Blenheim</option><option>Westport</option><option>Greymouth</option>
-                            <option>Kaikoura</option><option>Christchurch</option><option>Timaru</option><option>Mt Cook</option>
-                            <option>Queenstown</option><option>Dunedin</option><option>Invercargill</option><option>Stewart Is.</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>2. Select Day</label>
-                        <select id="tf-day">
-                            <option value="0">Today</option>
-                            <option value="1">Tomorrow</option>
-                            <option value="2">Day 3</option>
-                            <option value="3">Day 4</option>
-                            <option value="4">Day 5</option>
-                        </select>
-                    </div>
-                </div>
-
-                <hr style="border:0; border-top:1px solid #e5e7eb; margin:20px 0;">
-
-                <h3>Forecast Details</h3>
-                <div class="grid-2">
-                    <div><label>Max Temp (°C)</label><input type="number" id="tf-max" placeholder="e.g. 18"></div>
-                    <div><label>Min Temp (°C)</label><input type="number" id="tf-min" placeholder="e.g. 9"></div>
-                </div>
-                <div class="grid-2">
-                    <div>
-                        <label>Weather Icon</label>
-                        <select id="tf-icon">
-                            <option value="0">Sunny / Clear</option>
-                            <option value="2">Cloudy</option>
-                            <option value="45">Fog</option>
-                            <option value="61">Rain</option>
-                            <option value="80">Showers</option>
-                            <option value="95">Thunderstorms</option>
-                            <option value="71">Snow</option>
-                        </select>
-                    </div>
-                    <div><label>Wind (e.g. NE 30)</label><input id="tf-wind"></div>
-                </div>
-                <label>Written Summary</label>
-                <textarea id="tf-summary" rows="2" placeholder="e.g. Fine spells increasing, isolated showers later."></textarea>
-                
-                <div class="grid-2" style="margin-top:15px;">
-                    <button class="btn-success" onclick="saveTownOverride()">Save Manual Forecast</button>
-                    <button class="btn-danger" onclick="resetTownOverride()">Revert to Computer</button>
-                </div>
-            </div>
-            
-            <div id="tf-active-list" class="card">Loading active overrides...</div>
+            <button class="btn-primary" onclick="saveNewsData()">Save Changes to Public Site</button>
         </div>
 
         <!-- ALERTS TAB -->
         <div id="tab-alerts" class="tab">
-            <h1>Alerts</h1>
-            <div class="card"><label>Title</label><input id="ag-title"><label>Overview</label><textarea id="ag-over" rows="2"></textarea></div>
-            <div class="card"><button class="btn-secondary" onclick="addAlertBlockUI()" style="width:100%">+ Add Alert Block</button><div id="ag-list"></div></div>
+            <h1>Weather Alerts</h1>
+            <div class="card">
+                <label>Bulletin Title</label><input id="ag-title">
+                <label>Overview</label><textarea id="ag-over" rows="2"></textarea>
+            </div>
+            <div class="card">
+                <h3>Add Alert Block</h3>
+                <div class="grid-2">
+                    <div><label>Risk Level</label><select id="ag-type"><option value="Critical">CRITICAL (Purple)</option><option value="High">HIGH (Red)</option><option value="Enhanced">ENHANCED (Orange)</option><option value="Slight">SLIGHT (Yellow)</option><option value="Special">SPECIAL (Blue)</option></select></div>
+                    <div><label>Hazard</label><select id="ag-haz"><option>Heavy Rain</option><option>Severe Gales</option><option>Heavy Snow</option><option>Thunderstorms</option><option>Low Snow</option></select></div>
+                </div>
+                <label>Regions</label><input id="ag-reg" placeholder="e.g. Fiordland, Westland">
+                <div class="grid-2">
+                    <div><label>Start</label><input type="datetime-local" id="ag-start"></div>
+                    <div><label>End</label><input type="datetime-local" id="ag-end"></div>
+                </div>
+                <label>Details</label><textarea id="ag-det" rows="3"></textarea>
+                <button class="btn-secondary" onclick="stageAlert()" style="width:100%">+ Add Block</button>
+            </div>
+            <div id="ag-list" class="card"></div>
             <button class="btn-primary" onclick="saveAlerts()">Publish Alerts</button>
         </div>
 
-        <!-- PLACEHOLDERS FOR OTHERS -->
-        <div id="tab-storm" class="tab"><div class="card"><h3>StormCast</h3><button class="btn-primary" onclick="saveGeneric('storm')">Save</button></div></div>
-        <div id="tab-snow" class="tab"><div class="card"><h3>SnowCast</h3><button class="btn-primary" onclick="saveGeneric('snow')">Save</button></div></div>
-        <div id="tab-sig" class="tab"><div class="card"><h3>Sig Weather</h3><button class="btn-primary" onclick="saveGeneric('sig')">Save</button></div></div>
-        <div id="tab-drought" class="tab"><div class="card"><h3>DroughtCast</h3><button class="btn-primary" onclick="saveGeneric('drought')">Save</button></div></div>
-        <div id="tab-archive" class="tab"><h1>Archives</h1><div id="arch-view" class="card">Select source to load...</div></div>
+        <!-- STORMCAST TAB -->
+        <div id="tab-storm" class="tab">
+            <h1>StormCast</h1>
+            <div class="card" style="background:#f0fdf4; border-color:#16a34a;">
+                <h3>Create Forecast</h3>
+                <label>Title</label><input id="stc-title">
+                <div class="grid-2">
+                    <div><label>Valid From</label><input type="datetime-local" id="stc-start"></div>
+                    <div><label>Valid To</label><input type="datetime-local" id="stc-end"></div>
+                </div>
+                <label>Overview</label><textarea id="stc-over" rows="3"></textarea>
+                <label>Map Image</label><input type="file" id="stc-img">
+                <hr style="border:0; border-top:1px solid #ddd; margin:20px 0;">
+                <div id="stc-regions"></div>
+                <button class="btn-secondary" onclick="addStcRegionUI()">+ Add Region</button>
+                <button class="btn-primary" onclick="saveStorm()" style="margin-top:15px;">Publish StormCast</button>
+            </div>
+            <div id="stc-list"></div>
+        </div>
+
+        <!-- SNOWCAST -->
+        <div id="tab-snow" class="tab">
+            <h1>SnowCast</h1>
+            <div class="card"><label>Title</label><input id="sc-title"><label>Overview</label><textarea id="sc-over" rows="2"></textarea></div>
+            <div id="sc-regions"></div>
+            <button class="btn-secondary" onclick="addSnowRegionUI()" style="width:100%; margin-bottom:10px;">+ Add Region</button>
+            <button class="btn-primary" onclick="saveSnow()">Publish SnowCast</button>
+        </div>
+
+        <!-- SIG WEATHER -->
+        <div id="tab-sig" class="tab">
+            <h1>Significant Weather Outlook</h1>
+            <div class="card"><label>Title</label><input id="sig-title"><label>Summary</label><textarea id="sig-sum" rows="2"></textarea></div>
+            <div id="sig-days"></div>
+            <button class="btn-secondary" onclick="addSigDayUI()" style="width:100%; margin-bottom:10px;">+ Add Day</button>
+            <button class="btn-primary" onclick="saveSig()">Publish Outlook</button>
+        </div>
+
+        <!-- DROUGHT -->
+        <div id="tab-drought" class="tab">
+            <h1>DroughtCast</h1>
+            <div class="card"><label>Title</label><input id="dc-title"><label>Summary</label><textarea id="dc-sum" rows="2"></textarea></div>
+            <div id="dc-list"></div>
+            <button class="btn-secondary" onclick="addDroughtUI()" style="width:100%; margin-bottom:10px;">+ Add Region</button>
+            <button class="btn-primary" onclick="saveDrought()">Publish DroughtCast</button>
+        </div>
+
+        <!-- ARCHIVE -->
+        <div id="tab-archive" class="tab">
+            <h1>Archives</h1>
+            <select id="arch-sel" onchange="loadArch()" style="margin-bottom:20px; padding:10px;"><option value="alerts">Alerts</option><option value="storm">StormCast</option><option value="snow">SnowCast</option><option value="sig">Sig Weather</option></select>
+            <div id="arch-view" class="card">Loading...</div>
+        </div>
 
     </div>
 </div>
@@ -139,115 +157,163 @@
 <script>
 const KEY = '$2a$10$/h3xvps5BAmoU8dJigw8T.qYg3eoESVLwjXbX9aHmb85Y96cExsCe';
 const IMG_KEY = '11bca15e224ed683c68e78cc0013c205';
-// Added 'towns' bin key - effectively reusing the news bin or creating a new one. 
-// NOTE: For simplicity, I will store town overrides in the 'drought' bin (or any unused bin) if you don't want to create a new one, 
-// BUT best practice is a new bin. I will reuse the 'news' bin but under a new key 'overrides' to keep it simple for you.
 const BINS = {news:'69238031d0ea881f40fb9d04', alerts:'68db095dae596e708f0072be', storm:'68d8cdac43b1c97be9528f9b', snow:'68e0738e43b1c97be9599eb1', sig:'68d8c3c6d0ea881f408d7a5c', drought:'68d9fc07d0ea881f408e8e5b'};
 const api = (b) => `https://api.jsonbin.io/v3/b/${BINS[b]}`;
 const headers = {'X-Master-Key': KEY, 'Content-Type': 'application/json'};
-const getFresh = (u) => u + '?t=' + Date.now();
 
-// STATE
-let data = { news:[], overrides:{} }; // Storing overrides in the same bin as news for efficiency
+// APP STATE
+let data = { news:[], alerts:[], storm:[], snow:[], sig:[], drought:[] };
+let archives = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
 
-function toast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display='block'; setTimeout(()=>t.style.display='none', 3000); }
+function toast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(()=>t.style.display='none', 3000); }
 function setTab(id) { document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); }
 async function upImg(el) { if(!el.files[0]) return null; const fd = new FormData(); fd.append('image', el.files[0]); const r = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:'POST', body:fd}); const j = await r.json(); return j.data.url; }
 
-// INIT
+// --- LOADERS ---
 async function init() {
-    // Load News & Overrides (Shared Bin)
-    try {
-        const r = await fetch(getFresh(api('news')+'/latest'), {headers:{'X-Master-Key':KEY}});
-        const d = await r.json();
-        data.news = d.record.news || [];
-        data.overrides = d.record.overrides || {}; // Load existing overrides
+    // NEWS LOADER (FAILSAFE)
+    fetch(api('news')+'/latest?t='+Date.now(), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d => {
+        // Check both possible structures
+        if (d.record && Array.isArray(d.record.news)) {
+            data.news = d.record.news;
+        } else if (d.record && Array.isArray(d.record)) {
+            data.news = d.record; // It was saved as a raw array
+        } else {
+            data.news = []; // Broken structure
+        }
         renderNews();
-        renderOverrides();
-    } catch(e) { console.log(e); }
-}
-
-// --- TOWN OVERRIDES ---
-function getOverrideKey() {
-    const town = document.getElementById('tf-town').value;
-    const dayOffset = document.getElementById('tf-day').value;
-    // Create a key based on Town + DateString (e.g. Nelson_2023-10-27)
-    const date = new Date();
-    date.setDate(date.getDate() + parseInt(dayOffset));
-    const dateStr = date.toLocaleDateString('en-NZ');
-    return `${town}_${dateStr}`;
-}
-
-async function saveTownOverride() {
-    const key = getOverrideKey();
-    const override = {
-        max: document.getElementById('tf-max').value,
-        min: document.getElementById('tf-min').value,
-        icon: document.getElementById('tf-icon').value,
-        wind: document.getElementById('tf-wind').value,
-        summary: document.getElementById('tf-summary').value,
-        timestamp: Date.now() // For 24h expiry check
-    };
+    });
     
-    data.overrides[key] = override;
-    
-    // Save to DB
-    toast('Saving Forecast...');
-    await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news:data.news, overrides:data.overrides})});
-    renderOverrides();
-    toast('Forecast Updated!');
+    // ALERTS
+    fetch(api('alerts')+'/latest?t='+Date.now(), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d => {
+        data.alerts = d.record.blocks || [];
+        archives.alerts = d.record.archive || [];
+        document.getElementById('ag-title').value = d.record.globalInfo?.title||'';
+        document.getElementById('ag-over').value = d.record.globalInfo?.overview||'';
+        renderAlerts();
+    });
+
+    // OTHER LOADERS
+    loadGeneric('storm', (d)=>{ data.storm=d.outlooks||[]; archives.storm=d.archive||[]; });
+    loadGeneric('snow', (d)=>{ data.snow=d.forecasts||[]; archives.snow=d.archive||[]; document.getElementById('sc-title').value=d.mainTitle||''; document.getElementById('sc-over').value=d.overview||''; });
+    loadGeneric('sig', (d)=>{ data.sig=d.forecasts||[]; archives.sig=d.archive||[]; document.getElementById('swo-overallTitle').value=d.overallTitle||''; document.getElementById('swo-overallSummary').value=d.overallSummary||''; });
+    loadGeneric('drought', (d)=>{ data.drought=d.alerts||[]; document.getElementById('dc-title').value=d.overview?.title||''; document.getElementById('dc-sum').value=d.overview?.summary||''; });
 }
 
-async function resetTownOverride() {
-    const key = getOverrideKey();
-    if(data.overrides[key]) {
-        delete data.overrides[key];
-        toast('Reverting...');
-        await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news:data.news, overrides:data.overrides})});
-        renderOverrides();
-        toast('Reverted to Computer Model');
-    } else {
-        toast('No override exists for this day.');
-    }
-}
+async function loadGeneric(key, cb) { fetch(api(key)+'/latest?t='+Date.now(), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d=>cb(d.record)); }
 
-function renderOverrides() {
-    const c = document.getElementById('tf-active-list');
-    const keys = Object.keys(data.overrides);
-    if(keys.length === 0) { c.innerHTML = 'No active manual forecasts.'; return; }
-    c.innerHTML = keys.map(k => {
-        const o = data.overrides[k];
-        // Check expiry (24h = 86400000ms)
-        const isExpired = (Date.now() - o.timestamp) > 86400000;
-        return `<div style="padding:10px; border-bottom:1px solid #eee; ${isExpired?'opacity:0.5':''}">
-            <strong>${k.replace('_', ' - ')}</strong> ${isExpired ? '(Expired - will revert)' : '(Active)'}<br>
-            ${o.summary}
-        </div>`;
-    }).join('');
-}
-
-// --- NEWS ---
+// --- NEWS LOGIC ---
 function renderNews() {
-    const c = document.getElementById('news-list-container'); c.innerHTML='';
-    data.news.forEach((n,i)=>c.innerHTML+=`<div class="item-row"><div><strong>${n.title}</strong></div><button class="btn-danger btn-sm" onclick="delNews(${i})">Del</button></div>`);
+    const c = document.getElementById('news-list-container'); c.innerHTML = '';
+    data.news.forEach((n,i) => {
+        c.innerHTML += `<div class="item-row"><div><strong>${n.title}</strong> <small>${new Date(n.scheduledAt).toLocaleDateString()}</small></div><button class="btn-danger" onclick="delNews(${i})">Delete</button></div>`;
+    });
 }
+
 async function addNewsItem() {
     toast('Uploading...');
-    const img = await upImg(document.getElementById('news-img'));
-    data.news.unshift({
-        id: Date.now(), title: document.getElementById('news-title').value,
-        tag: document.getElementById('news-tag').value, content: document.getElementById('news-content').value,
-        scheduledAt: new Date().toISOString(), titleImg: img||'MOCK_URL'
+    const img = await upImg(document.getElementById('news-title-img'));
+    const post = {
+        id: Date.now(),
+        title: document.getElementById('news-title').value,
+        tag: document.getElementById('news-tag').value,
+        content: document.getElementById('news-content').value,
+        titleImg: img || 'MOCK_URL',
+        scheduledAt: new Date().toISOString() // AUTO TIME
+    };
+    data.news.unshift(post);
+    renderNews();
+    toast('Added to list. Click SAVE to publish.');
+}
+
+function delNews(i) {
+    if(!confirm('Delete?')) return;
+    data.news.splice(i, 1);
+    renderNews();
+}
+
+async function saveNewsData() {
+    toast('Publishing...');
+    // FORCE CORRECT STRUCTURE: { news: [] }
+    await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news: data.news})});
+    toast('Published! Check public site.');
+}
+
+// --- RESET DATABASE FUNCTION ---
+async function resetNewsDB() {
+    if(!confirm('This will ERASE existing news and fix the database structure. Continue?')) return;
+    toast('Resetting...');
+    data.news = [];
+    // Writes a clean empty object { news: [] }
+    await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news: []})});
+    renderNews();
+    toast('Database Fixed. Try adding a post now.');
+}
+
+// --- ALERTS LOGIC ---
+function renderAlerts() {
+    const c = document.getElementById('ag-list'); c.innerHTML = '';
+    data.alerts.forEach((a,i) => {
+        c.innerHTML += `<div class="item-row"><div><strong>${a.weatherType} (${a.type})</strong><br><small>${a.regions}</small></div><button class="btn-danger" onclick="data.alerts.splice(${i},1); renderAlerts();">Delete</button></div>`;
     });
-    await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news:data.news, overrides:data.overrides})});
-    renderNews(); toast('Published!');
 }
-function delNews(i) { if(confirm('Delete?')) { data.news.splice(i,1); saveNewsData(); } }
-async function saveNewsData() { 
-    await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news:data.news, overrides:data.overrides})});
-    toast('Saved');
+function stageAlert() {
+    data.alerts.push({
+        type: document.getElementById('ag-type').value,
+        weatherType: document.getElementById('ag-haz').value,
+        regions: document.getElementById('ag-reg').value.split(','),
+        startTime: document.getElementById('ag-start').value,
+        endTime: document.getElementById('ag-end').value,
+        summary: document.getElementById('ag-det').value
+    });
+    renderAlerts();
 }
-async function resetNewsDB() { if(confirm('Reset DB?')) { data.news=[]; data.overrides={}; saveNewsData(); } }
+async function saveAlerts() {
+    toast('Saving...');
+    await fetch(api('alerts'), {method:'PUT', headers, body:JSON.stringify({
+        globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value },
+        blocks: data.alerts,
+        archive: archives.alerts
+    })});
+    toast('Published!');
+}
+
+// --- STORMCAST (Simplified) ---
+function addStcRegionUI() {
+    const d = document.createElement('div'); d.className='card'; d.innerHTML=`<label>Region Name</label><input class="r-name"><label>Risk</label><select class="r-lvl"><option>Slight</option><option>High</option></select><label>Details</label><textarea class="r-det"></textarea><button class="btn-danger" onclick="this.parentElement.remove()">Remove</button>`;
+    document.getElementById('stc-regions').appendChild(d);
+}
+async function saveStorm() {
+    toast('Saving...');
+    const img = await upImg(document.getElementById('stc-img'));
+    const regs = Array.from(document.getElementById('stc-regions').children).map(e => ({
+        regionName: e.querySelector('.r-name').value,
+        riskLevel: e.querySelector('.r-lvl').value,
+        threats: e.querySelector('.r-det').value,
+        risks: ["General"]
+    }));
+    const fc = {
+        title: document.getElementById('stc-title').value,
+        validFrom: document.getElementById('stc-start').value,
+        validUntil: document.getElementById('stc-end').value,
+        overallDiscussion: document.getElementById('stc-over').value,
+        mapUrl: img,
+        regionalForecasts: regs
+    };
+    data.storm.unshift(fc);
+    await fetch(api('storm'), {method:'PUT', headers, body:JSON.stringify({outlooks:data.storm, archive:archives.storm})});
+    toast('Published!');
+}
+
+// --- ARCHIVE ---
+async function loadArch() {
+    const k = document.getElementById('arch-sel').value;
+    const c = document.getElementById('arch-view'); c.innerHTML = 'Fetching...';
+    fetch(api(k)+'/latest?t='+Date.now(), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d=>{
+        const arch = d.record.archive || [];
+        c.innerHTML = arch.length ? arch.map(i=>`<div class="item-row">${i.title||i.weatherType||'Item'} (${new Date(i.validUntil||i.endTime||Date.now()).toLocaleDateString()})</div>`).join('') : 'No archives.';
+    });
+}
 
 init();
 </script>
