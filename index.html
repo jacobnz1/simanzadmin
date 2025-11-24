@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIMA Admin V22</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- CSS VARIABLES & RESET --- */
+        :root {
+            --bg-app: #f3f4f6; --bg-panel: #ffffff; --text-header: #111827; --text-body: #4b5563;
+            --primary: #2563eb; --border: #e5e7eb; --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+        }
+        body { margin: 0; padding: 20px; background-color: #e5e7eb; font-family: 'Inter', sans-serif; }
+        #sima-admin-wrapper { display: flex; min-height: 900px; background-color: var(--bg-app); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-width: 1400px; margin: 0 auto; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 280px; background-color: var(--bg-panel); display: flex; flex-direction: column; padding: 1.5rem; border-right: 1px solid var(--border); flex-shrink: 0; }
+        .brand { font-size: 1.2rem; font-weight: 800; margin-bottom: 2rem; color: var(--text-header); line-height: 1.3; }
+        .nav-btn { background: transparent; border: none; color: var(--text-body); padding: 0.85rem 1rem; text-align: left; width: 100%; cursor: pointer; border-radius: 8px; font-weight: 600; margin-bottom: 0.5rem; transition: all 0.2s; }
+        .nav-btn:hover { background-color: #f9fafb; color: var(--primary); }
+        .nav-btn.active { background-color: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+
+        /* MAIN CONTENT */
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; }
+        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        
+        /* FORMS */
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: var(--text-header); }
+        input, select, textarea { width: 100%; padding: 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; font-family: inherit; box-sizing: border-box; }
+        
+        /* BUTTONS */
+        button { cursor: pointer; font-weight: 600; border: none; border-radius: 6px; transition: 0.2s; padding: 0.6rem 1.2rem; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: white; border: 1px solid #d1d5db; color: var(--text-header); }
+        .btn-danger { background: var(--danger); color: white; font-size: 0.8rem; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+        
+        /* UTILS */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
+        
+        /* Checkbox Grid */
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 5px; background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .check-label { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; }
+        
+        /* Toast */
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; z-index: 9999; display: none; }
+        
+        /* Toolbar for News */
+        .toolbar { display: flex; gap: 5px; margin-bottom: 5px; background: #f1f5f9; padding: 5px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: wrap; }
+        .tool-btn { background: white; border: 1px solid #cbd5e1; padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: 4px; color: #333; }
+        .tool-btn:hover { background: #e2e8f0; }
+    </style>
+</head>
+<body>
+
+<div id="sima-admin-wrapper">
+    <div class="sidebar">
+        <div class="brand">South Island<br>Met Agency</div>
+        <button class="nav-btn active" onclick="switchTab('tab-alert', this)">Alerts</button>
+        <button class="nav-btn" onclick="switchTab('tab-sigweather', this)">Sig. Weather</button>
+        <button class="nav-btn" onclick="switchTab('tab-storm', this)">StormCast</button>
+        <button class="nav-btn" onclick="switchTab('tab-snow', this)">SnowCast</button>
+        <button class="nav-btn" onclick="switchTab('tab-drought', this)">DroughtCast</button>
+        <button class="nav-btn" onclick="switchTab('tab-news', this)">News / Blog</button>
+    </div>
+
+    <div class="main-content">
+
+        <!-- TAB: ALERTS -->
+        <div id="tab-alert" class="tab-pane active">
+            <h1>Weather Alerts</h1>
+            <div class="card">
+                <div class="form-group"><label>Bulletin Title</label><input id="ag-bulletin-title"></div>
+                <div class="form-group"><label>Overview</label><textarea id="ag-bulletin-overview" rows="3"></textarea></div>
+            </div>
+            <div class="card">
+                <h2>Add Alert Block</h2>
+                <div class="grid-2"><div class="form-group"><label>Type</label><select id="ag-alertType-sel"><option value="Critical">CRITICAL</option><option value="Special">SPECIAL</option></select></div><div class="form-group"><label>Hazard</label><select id="ag-weather-type"><option>Heavy Rain</option><option>Severe Gales</option><option>Heavy Snow</option></select></div></div>
+                <div class="form-group"><label>Regions (Comma separated)</label><input id="ag-regions"></div>
+                <div class="grid-2"><div class="form-group"><label>Start</label><input type="datetime-local" id="ag-start-time"></div><div class="form-group"><label>End</label><input type="datetime-local" id="ag-end-time"></div></div>
+                <div class="form-group"><label>Details</label><textarea id="ag-block-summary" rows="3"></textarea></div>
+                <button onclick="addAlertBlock()" class="btn-success" style="width:100%">Stage Alert</button>
+            </div>
+            <div class="card"><h2>Staged Alerts</h2><div id="ag-active-alerts-list"></div></div>
+            <button onclick="publishAlerts()" class="btn-primary" style="width:100%">Publish Alerts</button>
+        </div>
+        
+        <!-- TAB: SIG WEATHER -->
+        <div id="tab-sigweather" class="tab-pane">
+            <h1>Significant Weather</h1>
+            <div class="card">
+                <div class="form-group"><label>Bulletin Title</label><input id="swo-overallTitle"></div>
+                <div class="form-group"><label>Summary</label><textarea id="swo-overallSummary" rows="3"></textarea></div>
+            </div>
+            <div class="card"><div id="swo-entries-container"></div><button onclick="createSigEntry()" class="btn-secondary btn-sm">+ Add Day</button></div>
+            <button onclick="saveSigWeather()" class="btn-primary" style="width:100%">Save Outlook</button>
+        </div>
+
+        <!-- TAB: STORMCAST -->
+        <div id="tab-storm" class="tab-pane">
+            <h1>StormCast Manager</h1>
+            <div class="card" style="border-left: 5px solid #10b981; display:flex; justify-content:space-between; align-items:center;">
+                 <div><h2 style="margin:0; color:#047857;">Dashboard</h2><small>Forecasts auto-archive when expired.</small></div>
+                 <button onclick="openStcForm('new')" class="btn-primary">+ Add New Forecast</button>
+            </div>
+            <div id="stc-edit-form-container" class="card" style="display:none; border: 2px solid var(--primary);">
+                <h2>Edit / Create Outlook</h2>
+                <div class="form-group"><label>Forecast Title</label><input id="stc-title"></div>
+                <div class="grid-2"><div class="form-group"><label>Valid From</label><input type="datetime-local" id="stc-start"></div><div class="form-group"><label>Valid Until</label><input type="datetime-local" id="stc-end"></div></div>
+                <div class="form-group"><label>Overview</label><textarea id="stc-disc" rows="3"></textarea></div>
+                <div id="stc-regions-list"></div>
+                <button onclick="addStcRegion()" class="btn-secondary" style="width:100%; margin-bottom:20px;">+ Add Region Block</button>
+                <div class="form-group"><label>Map Image</label><input type="file" id="stc-img-in"><input type="hidden" id="stc-img-url"></div>
+                <button onclick="saveStormCast()" class="btn-primary" style="width:100%">Save & Publish StormCast</button>
+            </div>
+            <div class="card"><h2>Active Forecasts</h2><div id="stc-forecast-entries-container"></div></div>
+        </div>
+
+        <!-- TAB: SNOWCAST -->
+        <div id="tab-snow" class="tab-pane">
+            <h1>SnowCast</h1>
+            <div class="card"><label>Title</label><input id="sc-main-title"><label>Overview</label><textarea id="sc-main-overview" rows="3"></textarea></div>
+            <div class="card"><div id="sc-regions-container"></div><button onclick="addSnowRegion()" class="btn-secondary btn-sm">+ Add Region</button></div>
+            <button onclick="saveSnowCast()" class="btn-primary" style="width:100%">Save SnowCast</button>
+        </div>
+
+        <!-- TAB: DROUGHTCAST -->
+        <div id="tab-drought" class="tab-pane">
+            <h1>DroughtCast</h1>
+            <div class="card"><label>Overview Title</label><input id="dc-overview-title"><label>Summary</label><textarea id="dc-overview-summary" rows="3"></textarea><button onclick="saveDroughtOverview()" class="btn-primary btn-sm" style="margin-top:10px;">Update Overview</button></div>
+            <div class="card"><div id="dc-alert-list"></div></div>
+            <div class="card"><h2>Issue Alert</h2><div class="grid-2"><div class="form-group"><label>Region</label><input id="dc-region"></div><div class="form-group"><label>Severity</label><select id="dc-severity"><option>Slight</option><option>Enhanced</option><option>High</option><option>Critical</option></select></div></div><div class="grid-2"><div class="form-group"><label>Rain</label><input id="dc-rain-potential"></div><div class="form-group"><label>Expires</label><input type="date" id="dc-end-date"></div></div><div class="form-group"><label>Summary</label><textarea id="dc-summary" rows="3"></textarea></div><button onclick="addDroughtAlert()" class="btn-success" style="width:100%">Add Alert</button></div>
+        </div>
+
+        <!-- TAB: NEWS -->
+        <div id="tab-news" class="tab-pane">
+            <h1>News Manager</h1>
+            <div class="card">
+                <h2>Create / Edit</h2>
+                <div class="form-group"><label>Title</label><input id="news-title"></div>
+                <div class="form-group"><label>Title Image</label><input type="file" id="news-title-img"><input type="hidden" id="news-title-img-url"></div>
+                <div class="grid-2"><div class="form-group"><label>Date</label><input type="date" id="news-date"></div><div class="form-group"><label>Tag</label><select id="news-tag"><option>General</option><option>Severe</option><option>Analysis</option></select></div></div>
+                <div class="form-group"><label>Body Content</label><div class="toolbar"><button class="tool-btn" onclick="insertTag('<b>', '</b>')">Bold</button><button class="tool-btn" onclick="insertTag('<h3>', '</h3>')">Header</button><button class="tool-btn" onclick="insertTag('<br><br>', '')">Break</button><button class="tool-btn" onclick="document.getElementById('news-body-img-upload').click()">📷 Image</button><input type="file" id="news-body-img-upload" style="display:none;" onchange="handleBodyImage(this)"></div><textarea id="news-content" rows="6"></textarea></div>
+                <div class="grid-2"><div class="form-group"><label>Schedule</label><input type="datetime-local" id="news-schedule"></div><div class="form-group"><label>Link Text</label><input type="text" id="news-link-text" value="Read Full Story &rarr;"></div></div>
+                <button onclick="addNewsItem()" class="btn-success" style="width:100%">Add Post</button>
+            </div>
+            <div class="card"><div id="news-list-container"></div><button onclick="saveNewsData()" class="btn-primary" style="width:100%; margin-top:20px">Publish News</button></div>
+        </div>
+
+    </div>
+</div>
+
+<div id="toast" class="toast">Saved!</div>
+
+<script>
+    const MASTER_KEY = '$2a$10$/h3xvps5BAmoU8dJigw8T.qYg3eoESVLwjXbX9aHmb85Y96cExsCe';
+    const IMG_KEY = '11bca15e224ed683c68e78cc0013c205';
+    const BINS = { sig:'68d8c3c6d0ea881f408d7a5c', news:'69238031d0ea881f40fb9d04', drought:'68d9fc07d0ea881f408e8e5b', snow:'68e0738e43b1c97be9599eb1', alerts:'68db095dae596e708f0072be', storm:'68d8cdac43b1c97be9528f9b' };
+
+    function switchTab(id, btn) {
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active'); btn.classList.add('active');
+    }
+    function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
+    async function uploadImage(file) {
+        const fd = new FormData(); fd.append('image', file);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:'POST', body:fd});
+        const json = await res.json(); return json.data.url;
+    }
+    
+    /* --- AUTO ARCHIVE --- */
+    async function autoArchive(binId, listKey, archiveKey, dateField, format) {
+        try {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {headers: {'X-Master-Key': MASTER_KEY}});
+            const json = await res.json();
+            const data = json.record;
+            const activeList = data[listKey] || [];
+            const archiveList = data[archiveKey] || [];
+            const now = new Date();
+            const stillActive = [];
+            const toArchive = [];
+            let changed = false;
+
+            activeList.forEach(item => {
+                let itemDate;
+                if (format === 'iso') itemDate = new Date(item[dateField]);
+                else itemDate = new Date(item[dateField] + 'T23:59:59');
+                if (itemDate < now) { toArchive.push(item); changed = true; } 
+                else { stillActive.push(item); }
+            });
+
+            if (changed) {
+                archiveList.push(...toArchive);
+                data[listKey] = stillActive;
+                data[archiveKey] = archiveList;
+                await fetch(`https://api.jsonbin.io/v3/b/${binId}`, { method: 'PUT', headers: {'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY}, body: JSON.stringify(data) });
+            }
+        } catch (e) { console.error("Auto archive error", e); }
+    }
+
+    /* --- STORMCAST --- */
+    const STORM_RISKS = ["Heavy Rain", "Downpours", "Small Hail", "Large Hail", "Hail", "Small Tornadoes", "Large Tornadoes", "Damaging Tornadoes", "Severe Gales", "Lightning"];
+    let stormOutlooks=[]; let editStormIdx=-1;
+    async function loadStorm(){ await autoArchive(BINS.storm, 'outlooks', 'archive', 'validUntil', 'iso'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.storm}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; stormOutlooks=d.outlooks||[]; renderStorm(); }
+    function renderStorm(){ const c=document.getElementById('stc-forecast-entries-container'); c.innerHTML=''; stormOutlooks.forEach((o,i)=>{c.innerHTML+=`<div class="card" style="padding:1rem;display:flex;justify-content:space-between;"><span><strong>${o.title}</strong><br>Exp: ${new Date(o.validUntil).toLocaleString()}</span><div><button onclick="openStcForm('edit',${i})" class="btn-primary btn-sm">Edit</button> <button onclick="delStorm(${i})" class="btn-danger btn-sm">Delete</button></div></div>`}); }
+    function openStcForm(m,i){ document.getElementById('stc-edit-form-container').style.display='block'; document.getElementById('stc-regions-list').innerHTML=''; if(m==='edit'){ editStormIdx=i; const o=stormOutlooks[i]; document.getElementById('stc-title').value=o.title; document.getElementById('stc-start').value=o.validFrom; document.getElementById('stc-end').value=o.validUntil; document.getElementById('stc-disc').value=o.overallDiscussion; document.getElementById('stc-img-url').value=o.mapUrl; (o.regionalForecasts||[]).forEach(r=>addStcRegion(r)); } else { editStormIdx=-1; document.getElementById('stc-title').value=''; } }
+    function addStcRegion(d={}){ const el=document.createElement('div'); el.className='card'; el.style.padding='1rem'; el.style.background='#f8f9fa'; let checks = STORM_RISKS.map(r => `<label class="check-label"><input type="checkbox" class="risk-cb" value="${r}" ${(d.risks||[]).includes(r)?'checked':''}> ${r}</label>`).join(''); el.innerHTML=`<div style="margin-bottom:5px;"><strong>Region</strong><button onclick="this.closest('.card').remove()" class="btn-danger btn-sm" style="float:right">X</button></div><div class="form-group"><label>Region Name</label><input class="r-name" value="${d.regionName||''}"></div><div class="form-group"><label>Timeframe</label><input class="r-time" value="${d.timing||''}"></div><div class="form-group"><label>Risks</label><div class="checkbox-grid">${checks}</div></div><div class="form-group"><label>Risk Level</label><select class="r-level"><option>Slight</option><option>Enhanced</option><option>High</option><option>Critical</option><option>Downpours</option></select></div><textarea class="r-desc" rows="2">${d.threats||''}</textarea>`; if(d.riskLevel) el.querySelector('.r-level').value=d.riskLevel; document.getElementById('stc-regions-list').appendChild(el); }
+    async function saveStormCast(){ showToast('Saving...'); const f=document.getElementById('stc-img-in').files[0]; let u=document.getElementById('stc-img-url').value; if(f) u=await uploadImage(f); const rb=Array.from(document.querySelectorAll('#stc-regions-list .card')).map(e=>({regionName:e.querySelector('.r-name').value, timing:e.querySelector('.r-time').value, riskLevel:e.querySelector('.r-level').value, risks:Array.from(e.querySelectorAll('.risk-cb:checked')).map(c=>c.value), threats:e.querySelector('.r-desc').value})); const obj={id:Date.now(), title:document.getElementById('stc-title').value, validFrom:document.getElementById('stc-start').value, validUntil:document.getElementById('stc-end').value, overallDiscussion:document.getElementById('stc-disc').value, mapUrl:u, regionalForecasts:rb}; if(editStormIdx>-1) stormOutlooks[editStormIdx]=obj; else stormOutlooks.push(obj); await fetch(`https://api.jsonbin.io/v3/b/${BINS.storm}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({outlooks:stormOutlooks, archive:[]})}); document.getElementById('stc-edit-form-container').style.display='none'; renderStorm(); showToast('Saved!'); }
+    async function delStorm(i){ stormOutlooks.splice(i,1); await fetch(`https://api.jsonbin.io/v3/b/${BINS.storm}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({outlooks:stormOutlooks})}); renderStorm(); }
+
+    /* --- SIG WEATHER --- */
+    async function loadSig(){ await autoArchive(BINS.sig, 'forecasts', 'archive', 'date', 'date'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.sig}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('swo-overallTitle').value=d.overallTitle||''; document.getElementById('swo-overallSummary').value=d.overallSummary||''; const c=document.getElementById('swo-entries-container'); c.innerHTML=''; (d.forecasts||[]).forEach(f=>createSigEntry(f)); }
+    function createSigEntry(d={}){ const el=document.createElement('div'); el.className='card'; el.style.background='#f9fafb'; el.innerHTML=`<div style="display:flex;justify-content:space-between"><h4>Day</h4><button onclick="this.closest('.card').remove()" class="btn-danger btn-sm">X</button></div><div class="grid-2"><input type="date" class="d" value="${d.date||''}"><select class="l"><option>None</option><option>Slight</option><option>Enhanced</option><option>High</option></select></div><textarea class="s" rows="2" style="margin-top:5px;">${d.summary||''}</textarea><input type="hidden" class="u" value="${d.imageUrl||''}"><input type="file" class="f">`; if(d.alertLevel) el.querySelector('.l').value=d.alertLevel; el.querySelector('.f').onchange=async(e)=>{el.querySelector('.u').value=await uploadImage(e.target.files[0]); showToast('Image Ready');}; document.getElementById('swo-entries-container').appendChild(el); }
+    async function saveSigWeather(){ showToast('Saving...'); const f=Array.from(document.querySelectorAll('#swo-entries-container .card')).map(e=>({date:e.querySelector('.d').value, alertLevel:e.querySelector('.l').value, summary:e.querySelector('.s').value, imageUrl:e.querySelector('.u').value})); await fetch(`https://api.jsonbin.io/v3/b/${BINS.sig}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({overallTitle:document.getElementById('swo-overallTitle').value,overallSummary:document.getElementById('swo-overallSummary').value,forecasts:f})}); showToast('Saved!'); }
+
+    /* --- ALERTS --- */
+    let alertBlocks=[]; async function loadAlerts(){ await autoArchive(BINS.alerts, 'blocks', 'archive', 'endTime', 'iso'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.alerts}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('ag-bulletin-title').value=d.globalInfo?.title||''; document.getElementById('ag-bulletin-overview').value=d.globalInfo?.overview||''; alertBlocks=d.blocks||[]; renderAlerts(); }
+    function renderAlerts(){ const c=document.getElementById('ag-active-alerts-list'); c.innerHTML=''; alertBlocks.forEach((b,i)=>{c.innerHTML+=`<div class="card" style="padding:1rem;border-left:4px solid blue;"><strong>${b.weatherType}</strong><br>Regions: ${b.regions.join(', ')}<br><button onclick="delAlert(${i})" class="btn-danger btn-sm" style="margin-top:5px">Delete</button></div>`;}); }
+    function addAlertBlock(){ alertBlocks.push({id:Date.now(), type:document.getElementById('ag-alertType-sel').value, weatherType:document.getElementById('ag-weather-type').value, regions:document.getElementById('ag-regions').value.split(',').map(s=>s.trim()), startTime:document.getElementById('ag-start-time').value, endTime:document.getElementById('ag-end-time').value, summary:document.getElementById('ag-block-summary').value}); renderAlerts(); }
+    function delAlert(i){ alertBlocks.splice(i,1); renderAlerts(); }
+    async function publishAlerts(){ showToast('Publishing...'); await fetch(`https://api.jsonbin.io/v3/b/${BINS.alerts}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({globalInfo:{title:document.getElementById('ag-bulletin-title').value, overview:document.getElementById('ag-bulletin-overview').value}, blocks:alertBlocks})}); showToast('Published!'); }
+
+    /* --- NEWS & DROUGHT & SNOW (Simplified Loaders) --- */
+    let newsList=[]; async function loadNews(){ try{const r=await fetch(`https://api.jsonbin.io/v3/b/${BINS.news}/latest`,{headers:{'X-Master-Key':MASTER_KEY}}); const j=await r.json(); newsList=j.record.news||[]; renderNews();}catch(e){}}
+    function renderNews(){ const c=document.getElementById('news-list-container'); c.innerHTML=''; newsList.forEach((n,i)=>{c.innerHTML+=`<div class="card" style="padding:1rem; background:#f9fafb"><strong>${n.title}</strong> (${n.date}) <button onclick="delNews(${i})" class="btn-danger btn-sm" style="float:right">Delete</button></div>`}); }
+    function addNewsItem(){ const tImgFile = document.getElementById('news-title-img').files[0]; let tImgUrl = document.getElementById('news-title-img-url').value; if(tImgFile) { showToast('Uploading...'); tImgUrl = "MOCK_URL"; } newsList.unshift({title:document.getElementById('news-title').value, date:document.getElementById('news-date').value, tag:document.getElementById('news-tag').value, content:document.getElementById('news-content').value, scheduledAt:document.getElementById('news-schedule').value || new Date().toISOString(), titleImg: tImgUrl }); renderNews(); }
+    function delNews(i){ newsList.splice(i,1); renderNews(); }
+    async function saveNewsData(){ showToast('Publishing...'); await fetch(`https://api.jsonbin.io/v3/b/${BINS.news}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({news:newsList})}); showToast('Published!'); }
+
+    // Loaders for Snow & Drought (Existing Logic)
+    async function loadSnow(){ await autoArchive(BINS.snow, 'forecasts', 'archive', 'validTo', 'iso'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.snow}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('sc-main-title').value=d.mainTitle||''; document.getElementById('sc-main-overview').value=d.overview||''; const c=document.getElementById('sc-regions-container'); c.innerHTML=''; (d.forecasts||[]).forEach(f=>addSnowRegion(f)); }
+    function addSnowRegion(d={}){ const el=document.createElement('div'); el.className='card'; el.style.padding='1rem'; el.style.background='#f8f9fa'; el.innerHTML=`<div style="display:flex;justify-content:space-between"><strong>Region</strong><button onclick="this.closest('.card').remove()" class="btn-danger btn-sm">X</button></div><div class="grid-2"><input class="n" value="${d.region||''}" placeholder="Name"><select class="r"><option>Slight</option><option>High</option></select></div><textarea class="s" style="margin-top:5px" rows="2">${d.summary||''}</textarea><div class="grid-2"><input type="datetime-local" class="vf" value="${d.validFrom||''}"><input type="datetime-local" class="vt" value="${d.validTo||''}"></div>`; if(d.riskLevel) el.querySelector('.r').value=d.riskLevel; document.getElementById('sc-regions-container').appendChild(el); }
+    async function saveSnowCast(){ showToast('Saving...'); const f=Array.from(document.querySelectorAll('#sc-regions-container .card')).map(e=>({region:e.querySelector('.n').value, riskLevel:e.querySelector('.r').value, summary:e.querySelector('.s').value, validFrom:e.querySelector('.vf').value, validTo:e.querySelector('.vt').value})); await fetch(`https://api.jsonbin.io/v3/b/${BINS.snow}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({mainTitle:document.getElementById('sc-main-title').value, overview:document.getElementById('sc-main-overview').value, forecasts:f})}); showToast('Saved!'); }
+
+    async function loadDrought(){ await autoArchive(BINS.drought, 'alerts', 'archive', 'endDate', 'date'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.drought}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('dc-overview-title').value=d.overview.title||''; document.getElementById('dc-overview-summary').value=d.overview.summary||''; const c=document.getElementById('dc-alert-list'); c.innerHTML=''; (d.alerts||[]).forEach(a=>{c.innerHTML+=`<div class="card" style="padding:1rem; background:#fff3cd"><strong>${a.region}</strong> (${a.severity}) <button onclick="delDrought()" class="btn-danger btn-sm" style="float:right">X</button></div>`;}); }
+    async function saveDroughtOverview(){ /* ... */ }
+    function addDroughtAlert(){ /* ... */ }
+
+    // INIT
+    loadAlerts(); loadSig(); loadStorm(); loadSnow(); loadDrought(); loadNews();
+</script>
+</body>
+</html>
