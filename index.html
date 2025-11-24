@@ -3,50 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMA Admin V31 (Alerts Fixed)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>SIMA Admin V32 (Sig Weather Update)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f3f4f6; --panel: #ffffff; --text: #1f2937; --primary: #2563eb; --border: #e5e7eb; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
-        #app { display: flex; gap: 20px; max-width: 1600px; margin: 0 auto; height: 90vh; }
-        .sidebar { width: 250px; background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; overflow-y: auto; }
-        .brand { font-weight: 800; font-size: 1.2rem; margin-bottom: 20px; color: #111827; }
-        .nav-btn { text-align: left; background: none; border: none; padding: 12px; border-radius: 8px; font-weight: 600; color: #4b5563; cursor: pointer; transition: 0.2s; }
-        .nav-btn:hover, .nav-btn.active { background: #eff6ff; color: var(--primary); }
-        .nav-btn.active { background: var(--primary); color: white; }
-        .main { flex: 1; background: var(--panel); border-radius: 12px; border: 1px solid var(--border); padding: 30px; overflow-y: auto; }
-        .tab { display: none; } .tab.active { display: block; }
-        .card { border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #fff; }
-        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #374151; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-family: inherit; margin-bottom: 15px; box-sizing: border-box; }
-        button { padding: 10px 20px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; color: white; }
-        .btn-primary { background: var(--primary); width: 100%; }
-        .btn-secondary { background: #f3f4f6; color: #1f2937; }
-        .btn-danger { background: #ef4444; padding: 5px 10px; font-size: 0.8rem; }
-        .btn-success { background: #10b981; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 10px; }
-        #toast { position: fixed; bottom: 30px; right: 30px; background: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; display: none; }
+        :root { --bg: #f3f4f6; --panel: #ffffff; --text: #1f2937; --primary: #2563eb; --border: #e5e7eb; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; }
+        body { margin: 0; padding: 20px; background-color: #e5e7eb; font-family: 'Inter', sans-serif; }
+        #sima-admin-wrapper { display: flex; height: 95vh; background-color: var(--bg-app); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-width: 1600px; margin: 0 auto; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 260px; background-color: var(--bg-panel); display: flex; flex-direction: column; padding: 1.5rem; border-right: 1px solid var(--border); flex-shrink: 0; overflow-y: auto; }
+        .brand { font-size: 1.2rem; font-weight: 800; margin-bottom: 2rem; color: var(--text-header); }
+        .nav-btn { background: transparent; border: none; color: var(--text-body); padding: 12px; text-align: left; width: 100%; cursor: pointer; border-radius: 8px; font-weight: 600; margin-bottom: 5px; transition: all 0.2s; }
+        .nav-btn:hover { background-color: #f9fafb; color: var(--primary); }
+        .nav-btn.active { background-color: var(--primary); color: white; }
+
+        /* CONTENT */
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
+        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        
+        /* FORMS */
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: var(--text-header); }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; font-family: inherit; box-sizing: border-box; }
+        textarea { min-height: 80px; resize: vertical; }
+        
+        /* BUTTONS */
+        button { cursor: pointer; font-weight: 600; border: none; border-radius: 6px; padding: 10px 20px; font-size: 0.9rem; transition: 0.2s; color: white; }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-secondary { background: white; border: 1px solid #d1d5db; color: #333; }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+        /* UTILS */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; z-index: 9999; display: none; }
+        
+        /* LIST STYLES */
+        .item-list-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f9fafb; border-radius: 6px; margin-bottom: 10px; border: 1px solid #e5e7eb; }
+        .sub-item { background: white; padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 6px; }
+
+        /* --- SPECIFIC STYLES FOR SIG WEATHER (From your code) --- */
+        .daily-forecast-card { border: 1px solid var(--border); border-radius: 0.75rem; margin-top: 1.5rem; position: relative; background: #fff; }
+        .daily-forecast-card header { background-color: #f9fafb; padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border); border-radius: 0.75rem 0.75rem 0 0; display:flex; justify-content:space-between; align-items:center; }
+        .daily-forecast-card .content { padding: 1.5rem; }
+        .image-uploader .preview { width: 100px; height: 60px; object-fit: cover; border-radius: 0.5rem; margin-top: 0.5rem; border: 1px solid var(--border); display: none; }
+        .image-uploader .preview.visible { display: block; }
+        .remove-day-btn { background: transparent; color: #6b7280; border: none; font-size: 1.5rem; cursor: pointer; padding: 0; line-height: 1; }
+        
+        /* SIG WEATHER ARCHIVE */
+        #sw-archive-container details { border: 1px solid var(--border); border-radius: 0.5rem; margin-bottom: 0.75rem; }
+        #sw-archive-container summary { padding: 0.75rem 1rem; font-weight: 600; cursor: pointer; background-color: #f9fafb; }
+        #sw-archive-container .archive-item { padding: 1rem; border-top: 1px solid var(--border); font-size: 0.9rem; background: #fff; }
+        #sw-archive-container .archive-map { max-width: 100%; height: auto; border-radius: 0.5rem; margin-top: 0.5rem; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
 
-<div id="app">
+<div id="sima-admin-wrapper">
     <div class="sidebar">
         <div class="brand">SIMA Admin</div>
-        <!-- UPDATED NAV: Removed News & Towns -->
         <button class="nav-btn active" onclick="setTab('alerts')">Alerts</button>
         <button class="nav-btn" onclick="setTab('storm')">StormCast</button>
         <button class="nav-btn" onclick="setTab('snow')">SnowCast</button>
-        <button class="nav-btn" onclick="setTab('sig')">Sig. Weather</button>
+        <button class="nav-btn" onclick="setTab('sigweather')">Sig. Weather</button>
         <button class="nav-btn" onclick="setTab('drought')">DroughtCast</button>
         <button class="nav-btn" onclick="setTab('archive')" style="margin-top:auto; background:#374151;">Archives</button>
     </div>
 
-    <div class="main">
+    <div class="main-content">
 
         <!-- ALERTS TAB -->
-        <div id="tab-alerts" class="tab active">
+        <div id="tab-alerts" class="tab-pane active">
             <h1>Weather Alerts</h1>
             <div class="card">
                 <label>Bulletin Title</label><input id="ag-title" placeholder="e.g. Severe Weather Warning">
@@ -74,7 +105,7 @@
         </div>
 
         <!-- STORMCAST TAB -->
-        <div id="tab-storm" class="tab">
+        <div id="tab-storm" class="tab-pane">
             <h1>StormCast</h1>
             <div class="card" style="background:#f0fdf4; border-color:#16a34a;">
                 <h3>Create New Outlook Period</h3>
@@ -103,7 +134,7 @@
         </div>
 
         <!-- SNOWCAST TAB -->
-        <div id="tab-snow" class="tab">
+        <div id="tab-snow" class="tab-pane">
             <h1>SnowCast</h1>
             <div class="card"><label>Main Title</label><input id="sc-title"><label>Overview</label><textarea id="sc-over" rows="2"></textarea></div>
             <div class="card">
@@ -117,22 +148,33 @@
             <button class="btn-primary" onclick="saveSnow()">Publish SnowCast</button>
         </div>
 
-        <!-- SIG WEATHER -->
-        <div id="tab-sig" class="tab">
+        <!-- SIGNIFICANT WEATHER TAB (REPLACED WITH YOUR CODE) -->
+        <div id="tab-sigweather" class="tab-pane">
             <h1>Significant Weather Outlook</h1>
-            <div class="card"><label>Bulletin Title</label><input id="sig-title"><label>Summary</label><textarea id="sig-sum" rows="2"></textarea></div>
             <div class="card">
-                <h3>Add Day</h3>
-                <div class="grid-2"><div><label>Date</label><input type="date" id="swo-date"></div><div><label>Risk</label><select id="swo-risk"><option>Slight</option><option>Enhanced</option><option>High</option><option>Critical</option></select></div></div>
-                <label>Details</label><textarea id="swo-summary"></textarea><label>Image</label><input type="file" id="swo-img">
-                <button onclick="addSigDay()" class="btn-success" style="width:100%">Add Day</button>
+                <h2>Overall Outlook</h2>
+                <div class="form-group"><label for="swo-overallTitle">Forecast Title</label><input type="text" id="swo-overallTitle" placeholder="e.g. Unsettled week ahead..."></div>
+                <div class="form-group"><label for="swo-overallSummary">Brief Summary</label><textarea id="swo-overallSummary" placeholder="e.g. A series of fronts will bring periods of rain..."></textarea></div>
             </div>
-            <div id="swo-entries-container" class="card"></div>
-            <button class="btn-primary" onclick="saveSigWeather()">Publish Outlook</button>
+            
+            <div class="card">
+                <h2>Daily Forecasts</h2>
+                <p style="font-size: 0.9em; color: var(--text-secondary); margin-top: -1rem; margin-bottom: 1rem;">Only upcoming and today's forecasts are shown here. Past forecasts are automatically moved to the Archive below.</p>
+                <div id="swo-entries-container"></div>
+                <button onclick="createSigEntry()" class="btn-secondary" style="width:100%">+ Add New Day</button>
+            </div>
+
+            <button onclick="saveSigWeather()" class="btn-primary" style="width:100%">Save & Publish Outlook</button>
+
+            <div class="card" style="margin-top:20px;">
+                <h2>Archive</h2>
+                <div id="sw-archive-container"></div>
+                <button onclick="clearSigArchive()" class="btn-danger" style="width:100%; margin-top:10px;">Clear Archive</button>
+            </div>
         </div>
 
-        <!-- DROUGHT -->
-        <div id="tab-drought" class="tab">
+        <!-- DROUGHTCAST TAB -->
+        <div id="tab-drought" class="tab-pane">
             <h1>DroughtCast</h1>
             <div class="card"><label>Title</label><input id="dc-title"><label>Summary</label><textarea id="dc-sum" rows="2"></textarea></div>
             <div class="card">
@@ -146,8 +188,8 @@
             <button class="btn-primary" onclick="saveDrought()">Publish DroughtCast</button>
         </div>
 
-        <!-- ARCHIVE -->
-        <div id="tab-archive" class="tab">
+        <!-- ARCHIVE TAB (General) -->
+        <div id="tab-archive" class="tab-pane">
             <h1>Archives</h1>
             <select id="arch-sel" onchange="loadArch()" style="margin-bottom:15px; padding:10px;"><option value="alerts">Alerts</option><option value="storm">StormCast</option><option value="snow">SnowCast</option><option value="sig">Sig Weather</option></select>
             <div id="arch-view" class="card">Select source...</div>
@@ -168,9 +210,12 @@ const getFresh = (u) => u + '?t=' + Date.now();
 // STATE
 let data = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
 let archives = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
+// Specifically for Sig Weather specific variables
+let sigActiveForecasts = [];
+let sigArchiveData = [];
 
 function toast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display='block'; setTimeout(()=>t.style.display='none', 3000); }
-function setTab(id) { document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); }
+function setTab(id) { document.querySelectorAll('.tab-pane').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); }
 async function upImg(el) { if(!el.files[0]) return null; const fd = new FormData(); fd.append('image', el.files[0]); const r = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:'POST', body:fd}); const j = await r.json(); return j.data.url; }
 
 // --- LOADERS ---
@@ -200,15 +245,6 @@ async function init() {
         renderSnowList();
     });
 
-    // SIG WEATHER
-    fetch(getFresh(api('sig')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d => {
-        data.sig = d.record.forecasts || [];
-        archives.sig = d.record.archive || [];
-        document.getElementById('swo-overallTitle').value = d.record.overallTitle||'';
-        document.getElementById('swo-overallSummary').value = d.record.overallSummary||'';
-        renderSigList();
-    });
-
     // DROUGHT
     fetch(getFresh(api('drought')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d => {
         data.drought = d.record.alerts || [];
@@ -216,9 +252,12 @@ async function init() {
         document.getElementById('dc-sum').value = d.record.overview?.summary||'';
         renderDroughtList();
     });
+
+    // SIG WEATHER (Special Load)
+    loadSig();
 }
 
-// --- ALERTS LOGIC (FIXED) ---
+// --- ALERTS LOGIC ---
 function renderAlerts() {
     const c = document.getElementById('ag-list'); c.innerHTML = '';
     data.alerts.forEach((a,i) => {
@@ -226,17 +265,15 @@ function renderAlerts() {
     });
 }
 function stageAlert() {
-    // Correctly fetching values now
     data.alerts.push({
-        type: document.getElementById('ag-risk').value, // Fixed ID
-        weatherType: document.getElementById('ag-haz').value, // Fixed ID
+        type: document.getElementById('ag-risk').value,
+        weatherType: document.getElementById('ag-haz').value,
         regions: document.getElementById('ag-reg').value.split(','),
         startTime: document.getElementById('ag-start').value,
         endTime: document.getElementById('ag-end').value,
         summary: document.getElementById('ag-det').value
     });
     renderAlerts();
-    // Clear inputs for next
     document.getElementById('ag-reg').value = '';
     document.getElementById('ag-det').value = '';
 }
@@ -250,7 +287,7 @@ async function saveAlerts() {
     toast('Published!');
 }
 
-// --- STORMCAST LOGIC (FIXED MULTI-PERIOD) ---
+// --- STORMCAST LOGIC ---
 function addStcRegionUI() {
     const d = document.createElement('div'); d.className='sub-item'; d.innerHTML=`<label>Region Name</label><input class="r-name"><label>Risk</label><select class="r-lvl"><option>Slight</option><option>High</option></select><label>Details</label><textarea class="r-det"></textarea><button class="btn-danger btn-sm" onclick="this.parentElement.remove()">Remove</button>`;
     document.getElementById('stc-regions').appendChild(d);
@@ -264,7 +301,6 @@ async function addStormCast() {
         threats: e.querySelector('.r-det').value,
         risks: ["General"]
     }));
-    
     const fc = {
         title: document.getElementById('stc-title').value,
         validFrom: document.getElementById('stc-start').value,
@@ -273,17 +309,10 @@ async function addStormCast() {
         mapUrl: img,
         regionalForecasts: regs
     };
-    
-    // Add to array
     data.storm.push(fc);
-    
-    // SORT: Earliest expiry first
     data.storm.sort((a,b) => new Date(a.validUntil) - new Date(b.validUntil));
-    
     renderStormList();
     toast('Added! Click Publish to save.');
-    
-    // Reset form
     document.getElementById('stc-title').value = '';
     document.getElementById('stc-over').value = '';
     document.getElementById('stc-regions').innerHTML = '';
@@ -299,7 +328,7 @@ async function saveStorm() {
     toast('Published!');
 }
 
-// --- SNOWCAST ---
+// --- SNOWCAST LOGIC ---
 function addSnowRegion() {
     data.snow.push({
         region: document.getElementById('sc-reg-name').value,
@@ -319,29 +348,162 @@ async function saveSnow() {
     toast('Published!');
 }
 
-// --- SIG WEATHER ---
-async function addSigDay() {
-    toast('Uploading...');
-    const img = await upImg(document.getElementById('swo-img'));
-    data.sig.push({
-        date: document.getElementById('swo-date').value,
-        alertLevel: document.getElementById('swo-risk').value,
-        summary: document.getElementById('swo-summary').value,
-        imageUrl: img
-    });
-    renderSigList();
-    toast('Added!');
-}
-function renderSigList() {
-    const c = document.getElementById('swo-entries-container'); c.innerHTML='';
-    data.sig.forEach((f,i) => { c.innerHTML+=`<div class="item-list-row"><div>${f.date} (${f.alertLevel})</div><button class="btn-danger btn-sm" onclick="data.sig.splice(${i},1);renderSigList()">Del</button></div>`; });
-}
-async function saveSigWeather() {
-    await fetch(api('sig'), {method:'PUT', headers, body:JSON.stringify({overallTitle:document.getElementById('swo-overallTitle').value, overallSummary:document.getElementById('swo-overallSummary').value, forecasts:data.sig, archive:archives.sig})});
-    toast('Published!');
+/* --- SIG WEATHER LOGIC (FROM YOUR CODE) --- */
+async function loadSig() {
+    try {
+        const r = await fetch(getFresh(api('sig')+'/latest'), {headers:{'X-Master-Key':KEY}});
+        const d = (await r.json()).record;
+        document.getElementById('swo-overallTitle').value = d.overallTitle || '';
+        document.getElementById('swo-overallSummary').value = d.overallSummary || '';
+        
+        sigArchiveData = d.archive || [];
+        const allForecasts = d.forecasts || [];
+        
+        // Date Filtering (Archive old stuff)
+        const todayNZ = new Date().toISOString().split('T')[0]; // Simple ISO Date YYYY-MM-DD
+        
+        sigActiveForecasts = [];
+        let dataModified = false;
+
+        allForecasts.forEach(f => {
+            if (f.date && f.date >= todayNZ) {
+                sigActiveForecasts.push(f);
+            } else if (f.date) {
+                // Move to archive
+                sigArchiveData.push(f);
+                dataModified = true;
+            }
+        });
+
+        // Sort
+        sigActiveForecasts.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Render
+        const container = document.getElementById('swo-entries-container');
+        container.innerHTML = '';
+        sigActiveForecasts.forEach(f => createSigEntryElement(f));
+        renderSigArchive();
+
+        if (dataModified) saveSigWeather(true); // Silent save if archived
+
+    } catch(e) { console.error("Sig load error", e); }
 }
 
-// --- DROUGHT ---
+function createSigEntryElement(entryData = {}) {
+    const id = entryData.id || `entry-${Date.now()}-${Math.random()}`;
+    const container = document.getElementById('swo-entries-container');
+    const div = document.createElement('div');
+    div.className = 'daily-forecast-card';
+    div.setAttribute('data-id', id);
+    div.innerHTML = `
+        <header><h3>Daily Forecast</h3><button class="remove-day-btn">×</button></header>
+        <div class="content">
+            <div class="grid-2">
+                <div class="form-group"><label>Date</label><input type="date" class="forecast-date" value="${entryData.date || ''}"></div>
+                <div class="form-group"><label>Alert Level</label>
+                    <select class="forecast-alert-level">
+                        <option value="None" ${!entryData.alertLevel || entryData.alertLevel === 'None' ? 'selected' : ''}>None</option>
+                        <option value="Slight" ${entryData.alertLevel === 'Slight' ? 'selected' : ''}>Slight</option>
+                        <option value="Enhanced" ${entryData.alertLevel === 'Enhanced' ? 'selected' : ''}>Enhanced</option>
+                        <option value="High" ${entryData.alertLevel === 'High' ? 'selected' : ''}>High</option>
+                        <option value="Critical" ${entryData.alertLevel === 'Critical' ? 'selected' : ''}>Critical</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group image-uploader">
+                <label>Upload Map Image</label>
+                <input type="file" class="forecast-image-upload" accept="image/*">
+                <img class="preview ${entryData.imageUrl ? 'visible' : ''}" src="${entryData.imageUrl || ''}">
+                <input type="hidden" class="forecast-image-url" value="${entryData.imageUrl || ''}">
+            </div>
+            <div class="form-group"><label>Summary</label><textarea class="forecast-summary" placeholder="Enter summary...">${entryData.summary || ''}</textarea></div>
+        </div>
+    `;
+    container.appendChild(div);
+
+    // Events
+    div.querySelector('.remove-day-btn').addEventListener('click', () => div.remove());
+    div.querySelector('.forecast-image-upload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            div.querySelector('.preview').src = URL.createObjectURL(file);
+            div.querySelector('.preview').classList.add('visible');
+        }
+    });
+}
+
+function createSigEntry() { createSigEntryElement(); } // Wrapper for button
+
+async function saveSigWeather(isSilent = false) {
+    if(!isSilent) toast('Saving...');
+    
+    // 1. Process Inputs & Upload Images
+    const entries = document.querySelectorAll('.daily-forecast-card');
+    const promises = Array.from(entries).map(async (entry) => {
+        const fileInput = entry.querySelector('.forecast-image-upload');
+        let url = entry.querySelector('.forecast-image-url').value;
+        
+        if (fileInput.files[0]) {
+            try { url = await upImg(fileInput); } catch(e){ console.log("Img fail", e); }
+        }
+        
+        return {
+            id: entry.getAttribute('data-id'),
+            date: entry.querySelector('.forecast-date').value,
+            summary: entry.querySelector('.forecast-summary').value,
+            alertLevel: entry.querySelector('.forecast-alert-level').value,
+            imageUrl: url
+        };
+    });
+    
+    const newForecasts = (await Promise.all(promises)).filter(f => f.date);
+    
+    // 2. Save to Bin
+    await fetch(api('sig'), {
+        method:'PUT', headers, 
+        body:JSON.stringify({
+            overallTitle: document.getElementById('swo-overallTitle').value,
+            overallSummary: document.getElementById('swo-overallSummary').value,
+            forecasts: newForecasts,
+            archive: sigArchiveData
+        })
+    });
+    
+    if(!isSilent) { toast('Published!'); loadSig(); }
+}
+
+function renderSigArchive() {
+    const container = document.getElementById('sw-archive-container');
+    container.innerHTML = '';
+    if(sigArchiveData.length === 0) { container.innerHTML = '<p>No archives.</p>'; return; }
+    
+    // Group by Month
+    const grouped = {};
+    sigArchiveData.forEach(f => {
+        const d = new Date(f.date);
+        const k = d.toLocaleString('en-NZ', { month: 'long', year: 'numeric' });
+        if(!grouped[k]) grouped[k] = [];
+        grouped[k].push(f);
+    });
+    
+    Object.keys(grouped).forEach(month => {
+        const det = document.createElement('details');
+        det.innerHTML = `<summary>${month}</summary>`;
+        grouped[month].forEach(f => {
+            det.innerHTML += `<div class="archive-item"><strong>${f.date}</strong>: ${f.alertLevel} - ${f.summary}</div>`;
+        });
+        container.appendChild(det);
+    });
+}
+
+async function clearSigArchive() {
+    if(confirm("Delete entire Sig Weather archive?")) {
+        sigArchiveData = [];
+        saveSigWeather();
+    }
+}
+
+// --- DROUGHT LOGIC ---
 function addDroughtAlert() {
     data.drought.push({
         region: document.getElementById('dc-reg').value,
@@ -367,7 +529,7 @@ async function loadArch() {
     const c = document.getElementById('arch-view'); c.innerHTML = 'Fetching...';
     fetch(api(k)+'/latest?t='+Date.now(), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d=>{
         const arch = d.record.archive || [];
-        c.innerHTML = arch.length ? arch.map(i=>`<div class="item-list-row" style="background:white;">${i.title||i.weatherType||'Item'}</div>`).join('') : 'No archives.';
+        c.innerHTML = arch.length ? arch.map(i=>`<div class="item-list-row" style="background:white;">${i.title||i.weatherType||i.date||'Item'}</div>`).join('') : 'No archives.';
     });
 }
 
