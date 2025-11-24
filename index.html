@@ -3,46 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMA Admin Manager</title>
+    <title>SIMA Admin V27 (Database Repair)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #f3f4f6; --panel: #ffffff; --text: #1f2937; --primary: #2563eb; --border: #e5e7eb; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
         #app { display: flex; gap: 20px; max-width: 1400px; margin: 0 auto; height: 90vh; }
-        
-        /* SIDEBAR */
         .sidebar { width: 250px; background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
-        .brand { font-weight: 800; font-size: 1.2rem; margin-bottom: 20px; color: #111827; }
         .nav-btn { text-align: left; background: none; border: none; padding: 12px; border-radius: 8px; font-weight: 600; color: #4b5563; cursor: pointer; transition: 0.2s; }
-        .nav-btn:hover, .nav-btn.active { background: #eff6ff; color: var(--primary); }
         .nav-btn.active { background: var(--primary); color: white; }
-
-        /* MAIN */
         .main { flex: 1; background: var(--panel); border-radius: 12px; border: 1px solid var(--border); padding: 30px; overflow-y: auto; }
         .tab { display: none; } .tab.active { display: block; }
-        
-        /* FORMS */
         .card { border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #fff; }
         label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #374151; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-family: inherit; margin-bottom: 15px; box-sizing: border-box; }
         button { padding: 10px 20px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; width: 100%; }
-        .btn-danger { background: #ef4444; color: white; padding: 5px 10px; font-size: 0.8rem; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-success { background: #10b981; color: white; }
         .btn-secondary { background: #f3f4f6; color: #1f2937; }
-
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f3f4f6; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        
-        /* TOAST */
-        #toast { position: fixed; bottom: 30px; right: 30px; background: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; display: none; animation: slideUp 0.3s; }
-        @keyframes slideUp { from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1} }
+        #toast { position: fixed; bottom: 30px; right: 30px; background: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; display: none; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div class="sidebar">
-        <div class="brand">SIMA Admin</div>
+        <h2 style="margin:0 0 20px 0">SIMA Admin</h2>
         <button class="nav-btn active" onclick="setTab('news')">News & Blog</button>
         <button class="nav-btn" onclick="setTab('alerts')">Alerts</button>
         <button class="nav-btn" onclick="setTab('storm')">StormCast</button>
@@ -57,6 +46,14 @@
         <!-- NEWS TAB -->
         <div id="tab-news" class="tab active">
             <h1 style="margin-top:0;">News Manager</h1>
+            
+            <!-- DATABASE REPAIR TOOL -->
+            <div class="card" style="background:#fff5f5; border-color:#fed7d7;">
+                <h3 style="color:#c53030; margin-top:0;">Troubleshooting</h3>
+                <p style="font-size:0.9rem; color:#c53030;">If posts are not showing on the website, click this button to reset the database structure.</p>
+                <button class="btn-danger" onclick="resetNewsDB()">⚠ RESET NEWS DATABASE (Fixes Display Issues)</button>
+            </div>
+
             <div class="card" style="background:#f9fafb; border:2px solid var(--primary);">
                 <h3>✍️ Write New Post</h3>
                 <label>Headline</label>
@@ -67,10 +64,11 @@
                 </div>
                 <label>Content (HTML allowed)</label>
                 <textarea id="news-content" rows="6" placeholder="Type content here..."></textarea>
-                <button class="btn-primary" onclick="addNews()">Publish Post Immediately</button>
+                <button class="btn-success" style="width:100%" onclick="addNewsItem()">Add Post</button>
             </div>
             <h3>Live Posts</h3>
-            <div id="news-list" class="card">Loading...</div>
+            <div id="news-list-container" class="card">Loading...</div>
+            <button class="btn-primary" onclick="saveNewsData()">Save Changes to Public Site</button>
         </div>
 
         <!-- ALERTS TAB -->
@@ -148,8 +146,7 @@
         <!-- ARCHIVE -->
         <div id="tab-archive" class="tab">
             <h1>Archives</h1>
-            <p>View historical data.</p>
-            <select id="arch-sel" onchange="loadArch()" style="margin-bottom:20px;"><option value="alerts">Alerts</option><option value="storm">StormCast</option><option value="snow">SnowCast</option><option value="sig">Sig Weather</option></select>
+            <select id="arch-sel" onchange="loadArch()" style="margin-bottom:20px; padding:10px;"><option value="alerts">Alerts</option><option value="storm">StormCast</option><option value="snow">SnowCast</option><option value="sig">Sig Weather</option></select>
             <div id="arch-view" class="card">Loading...</div>
         </div>
 
@@ -174,9 +171,16 @@ async function upImg(el) { if(!el.files[0]) return null; const fd = new FormData
 
 // --- LOADERS ---
 async function init() {
-    // NEWS
+    // NEWS LOADER (FAILSAFE)
     fetch(api('news')+'/latest?t='+Date.now(), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d => {
-        data.news = d.record.news || [];
+        // Check both possible structures
+        if (d.record && Array.isArray(d.record.news)) {
+            data.news = d.record.news;
+        } else if (d.record && Array.isArray(d.record)) {
+            data.news = d.record; // It was saved as a raw array
+        } else {
+            data.news = []; // Broken structure
+        }
         renderNews();
     });
     
@@ -189,7 +193,7 @@ async function init() {
         renderAlerts();
     });
 
-    // OTHERS (Simplified init for brevity, logic exists)
+    // OTHER LOADERS
     loadGeneric('storm', (d)=>{ data.storm=d.outlooks||[]; archives.storm=d.archive||[]; });
     loadGeneric('snow', (d)=>{ data.snow=d.forecasts||[]; archives.snow=d.archive||[]; document.getElementById('sc-title').value=d.mainTitle||''; document.getElementById('sc-over').value=d.overview||''; });
     loadGeneric('sig', (d)=>{ data.sig=d.forecasts||[]; archives.sig=d.archive||[]; document.getElementById('swo-overallTitle').value=d.overallTitle||''; document.getElementById('swo-overallSummary').value=d.overallSummary||''; });
@@ -200,15 +204,15 @@ async function loadGeneric(key, cb) { fetch(api(key)+'/latest?t='+Date.now(), {h
 
 // --- NEWS LOGIC ---
 function renderNews() {
-    const c = document.getElementById('news-list'); c.innerHTML = '';
+    const c = document.getElementById('news-list-container'); c.innerHTML = '';
     data.news.forEach((n,i) => {
         c.innerHTML += `<div class="item-row"><div><strong>${n.title}</strong> <small>${new Date(n.scheduledAt).toLocaleDateString()}</small></div><button class="btn-danger" onclick="delNews(${i})">Delete</button></div>`;
     });
 }
 
-async function addNews() {
+async function addNewsItem() {
     toast('Uploading...');
-    const img = await upImg(document.getElementById('news-img'));
+    const img = await upImg(document.getElementById('news-title-img'));
     const post = {
         id: Date.now(),
         title: document.getElementById('news-title').value,
@@ -218,18 +222,32 @@ async function addNews() {
         scheduledAt: new Date().toISOString() // AUTO TIME
     };
     data.news.unshift(post);
-    await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news: data.news})});
     renderNews();
-    toast('Published!');
-    document.getElementById('news-title').value = '';
-    document.getElementById('news-content').value = '';
+    toast('Added to list. Click SAVE to publish.');
 }
 
-async function delNews(i) {
+function delNews(i) {
     if(!confirm('Delete?')) return;
     data.news.splice(i, 1);
-    await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news: data.news})});
     renderNews();
+}
+
+async function saveNewsData() {
+    toast('Publishing...');
+    // FORCE CORRECT STRUCTURE: { news: [] }
+    await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news: data.news})});
+    toast('Published! Check public site.');
+}
+
+// --- RESET DATABASE FUNCTION ---
+async function resetNewsDB() {
+    if(!confirm('This will ERASE existing news and fix the database structure. Continue?')) return;
+    toast('Resetting...');
+    data.news = [];
+    // Writes a clean empty object { news: [] }
+    await fetch(api('news'), {method:'PUT', headers, body:JSON.stringify({news: []})});
+    renderNews();
+    toast('Database Fixed. Try adding a post now.');
 }
 
 // --- ALERTS LOGIC ---
@@ -255,13 +273,12 @@ async function saveAlerts() {
     await fetch(api('alerts'), {method:'PUT', headers, body:JSON.stringify({
         globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value },
         blocks: data.alerts,
-        archive: archives.alerts // Preserve archive
+        archive: archives.alerts
     })});
     toast('Published!');
 }
 
-// --- STORMCAST LOGIC ---
-// Simplified for brevity, expands on same pattern
+// --- STORMCAST (Simplified) ---
 function addStcRegionUI() {
     const d = document.createElement('div'); d.className='card'; d.innerHTML=`<label>Region Name</label><input class="r-name"><label>Risk</label><select class="r-lvl"><option>Slight</option><option>High</option></select><label>Details</label><textarea class="r-det"></textarea><button class="btn-danger" onclick="this.parentElement.remove()">Remove</button>`;
     document.getElementById('stc-regions').appendChild(d);
@@ -273,7 +290,7 @@ async function saveStorm() {
         regionName: e.querySelector('.r-name').value,
         riskLevel: e.querySelector('.r-lvl').value,
         threats: e.querySelector('.r-det').value,
-        risks: ["General"] // Simplified
+        risks: ["General"]
     }));
     const fc = {
         title: document.getElementById('stc-title').value,
@@ -288,7 +305,7 @@ async function saveStorm() {
     toast('Published!');
 }
 
-// --- ARCHIVE LOGIC ---
+// --- ARCHIVE ---
 async function loadArch() {
     const k = document.getElementById('arch-sel').value;
     const c = document.getElementById('arch-view'); c.innerHTML = 'Fetching...';
