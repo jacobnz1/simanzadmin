@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMA Admin V22</title>
+    <title>SIMA Admin V23</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -23,7 +23,7 @@
         .nav-btn.active { background-color: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
 
         /* MAIN CONTENT */
-        .main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; }
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
         .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
         
         /* FORMS */
@@ -44,23 +44,37 @@
         .tab-pane { display: none; }
         .tab-pane.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
-        
-        /* Checkbox Grid */
         .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 5px; background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; }
         .check-label { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; }
-        
-        /* Toast */
         .toast { position: fixed; bottom: 20px; right: 20px; background: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; z-index: 9999; display: none; }
-        
-        /* Toolbar for News */
         .toolbar { display: flex; gap: 5px; margin-bottom: 5px; background: #f1f5f9; padding: 5px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: wrap; }
         .tool-btn { background: white; border: 1px solid #cbd5e1; padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: 4px; color: #333; }
         .tool-btn:hover { background: #e2e8f0; }
+
+        /* ARCHIVE VIEWER */
+        .year-block { margin-bottom: 10px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+        .year-head { background: #f3f4f6; padding: 10px; cursor: pointer; font-weight: 700; display:flex; justify-content:space-between; }
+        .year-head:hover { background: #e5e7eb; }
+        .month-block { padding-left: 0; border-top: 1px solid #e5e7eb; display:none; background:white; }
+        .year-block.open .month-block { display: block; }
+        .arch-item { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .arch-item:hover { background: #f0f9ff; color: var(--primary); }
+        .arch-item span { color: #9ca3af; font-size: 0.8rem; }
+
+        /* MODAL FOR ARCHIVES */
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 40px; backdrop-filter: blur(2px); }
+        .modal-box { background: white; width: 100%; max-width: 800px; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); overflow: hidden; margin-bottom: 40px; }
+        .modal-head { padding: 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 30px; }
+        .detail-map { width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+        .detail-region { background: #f9fafb; border: 1px solid #e2e8f0; padding: 15px; margin-bottom: 10px; border-radius: 8px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; color: white; background: #64748b; }
     </style>
 </head>
 <body>
 
 <div id="sima-admin-wrapper">
+    <!-- Sidebar -->
     <div class="sidebar">
         <div class="brand">South Island<br>Met Agency</div>
         <button class="nav-btn active" onclick="switchTab('tab-alert', this)">Alerts</button>
@@ -69,8 +83,12 @@
         <button class="nav-btn" onclick="switchTab('tab-snow', this)">SnowCast</button>
         <button class="nav-btn" onclick="switchTab('tab-drought', this)">DroughtCast</button>
         <button class="nav-btn" onclick="switchTab('tab-news', this)">News / Blog</button>
+        <div style="margin-top:auto; border-top:1px solid #e5e7eb; padding-top:10px;">
+            <button class="nav-btn" onclick="switchTab('tab-archive', this); loadArchives();" style="background:#374151; color:white;">📂 Archives</button>
+        </div>
     </div>
 
+    <!-- Main Content -->
     <div class="main-content">
 
         <!-- TAB: ALERTS -->
@@ -136,7 +154,7 @@
             <h1>DroughtCast</h1>
             <div class="card"><label>Overview Title</label><input id="dc-overview-title"><label>Summary</label><textarea id="dc-overview-summary" rows="3"></textarea><button onclick="saveDroughtOverview()" class="btn-primary btn-sm" style="margin-top:10px;">Update Overview</button></div>
             <div class="card"><div id="dc-alert-list"></div></div>
-            <div class="card"><h2>Issue Alert</h2><div class="grid-2"><div class="form-group"><label>Region</label><input id="dc-region"></div><div class="form-group"><label>Severity</label><select id="dc-severity"><option>Slight</option><option>Enhanced</option><option>High</option><option>Critical</option></select></div></div><div class="grid-2"><div class="form-group"><label>Rain</label><input id="dc-rain-potential"></div><div class="form-group"><label>Expires</label><input type="date" id="dc-end-date"></div></div><div class="form-group"><label>Summary</label><textarea id="dc-summary" rows="3"></textarea></div><button onclick="addDroughtAlert()" class="btn-success" style="width:100%">Add Alert</button></div>
+            <div class="card"><h2>Issue Alert</h2><div class="grid-2"><div class="form-group"><label>Region</label><input id="dc-region"></div><div class="form-group"><label>Severity</label><select id="dc-severity"><option>Slight</option><option>Enhanced</option><option>High</option><option>Critical</option></select></div></div><div class="grid-2"><div class="form-group"><label>Rain Potential</label><input id="dc-rain-potential"></div><div class="form-group"><label>Expires</label><input type="date" id="dc-end-date"></div></div><div class="form-group"><label>Summary</label><textarea id="dc-summary" rows="3"></textarea></div><button onclick="addDroughtAlert()" class="btn-success" style="width:100%">Add Alert</button></div>
         </div>
 
         <!-- TAB: NEWS -->
@@ -154,6 +172,29 @@
             <div class="card"><div id="news-list-container"></div><button onclick="saveNewsData()" class="btn-primary" style="width:100%; margin-top:20px">Publish News</button></div>
         </div>
 
+        <!-- TAB: ARCHIVES -->
+        <div id="tab-archive" class="tab-pane">
+            <h1>Historical Archives</h1>
+            <div class="card">
+                <div class="grid-2">
+                    <div><label>Select Source to View</label><select id="arch-source" onchange="loadArchives()"><option value="alerts">Active Alerts</option><option value="storm">StormCast</option><option value="snow">SnowCast</option><option value="sig">Sig. Weather Outlooks</option></select></div>
+                    <div style="display:flex; align-items:end;"><p style="margin:0; font-size:0.8rem; color:#666;">Click items below to view full forecast details.</p></div>
+                </div>
+            </div>
+            <div id="arch-viewer" style="margin-top:20px;">Loading...</div>
+        </div>
+
+        <!-- ARCHIVE DETAIL MODAL -->
+        <div id="arch-modal" class="modal-overlay" onclick="if(event.target===this)this.style.display='none'">
+            <div class="modal-box">
+                <div class="modal-head">
+                    <h3 style="margin:0;">Archive Detail</h3>
+                    <button onclick="document.getElementById('arch-modal').style.display='none'" class="btn-danger btn-sm">Close</button>
+                </div>
+                <div id="arch-detail-body" class="modal-body"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -164,22 +205,43 @@
     const IMG_KEY = '11bca15e224ed683c68e78cc0013c205';
     const BINS = { sig:'68d8c3c6d0ea881f408d7a5c', news:'69238031d0ea881f40fb9d04', drought:'68d9fc07d0ea881f408e8e5b', snow:'68e0738e43b1c97be9599eb1', alerts:'68db095dae596e708f0072be', storm:'68d8cdac43b1c97be9528f9b' };
 
+    // Helper to bust cache
+    const getFreshUrl = (url) => url + '?t=' + new Date().getTime();
+
     function switchTab(id, btn) {
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active'); btn.classList.add('active');
     }
     function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
+    
+    function insertTag(start, end) {
+        const el = document.getElementById('news-content');
+        const s = el.selectionStart; const e = el.selectionEnd;
+        const val = el.value;
+        el.value = val.substring(0, s) + start + val.substring(s, e) + end + val.substring(e);
+        el.focus();
+    }
+
     async function uploadImage(file) {
         const fd = new FormData(); fd.append('image', file);
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:'POST', body:fd});
         const json = await res.json(); return json.data.url;
     }
     
-    /* --- AUTO ARCHIVE --- */
+    async function handleBodyImage(input) {
+        if(input.files[0]) {
+            showToast('Uploading image...');
+            const url = await uploadImage(input.files[0]);
+            insertTag(`<img src="${url}" style="width:100%; border-radius:8px; margin:10px 0;">`, '');
+            showToast('Image inserted!');
+        }
+    }
+
+    /* --- AUTO ARCHIVE & DATE HANDLING --- */
     async function autoArchive(binId, listKey, archiveKey, dateField, format) {
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {headers: {'X-Master-Key': MASTER_KEY}});
+            const res = await fetch(getFreshUrl(`https://api.jsonbin.io/v3/b/${binId}/latest`), {headers: {'X-Master-Key': MASTER_KEY}});
             const json = await res.json();
             const data = json.record;
             const activeList = data[listKey] || [];
@@ -193,8 +255,14 @@
                 let itemDate;
                 if (format === 'iso') itemDate = new Date(item[dateField]);
                 else itemDate = new Date(item[dateField] + 'T23:59:59');
-                if (itemDate < now) { toArchive.push(item); changed = true; } 
-                else { stillActive.push(item); }
+                
+                // Remove current day from Sig Weather once it hits 23:59 (or technically next day)
+                if (itemDate < now) { 
+                    toArchive.push({...item, archivedAt: new Date().toISOString()}); 
+                    changed = true; 
+                } else { 
+                    stillActive.push(item); 
+                }
             });
 
             if (changed) {
@@ -202,14 +270,137 @@
                 data[listKey] = stillActive;
                 data[archiveKey] = archiveList;
                 await fetch(`https://api.jsonbin.io/v3/b/${binId}`, { method: 'PUT', headers: {'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY}, body: JSON.stringify(data) });
+                showToast(`Auto-archived ${toArchive.length} expired items.`);
             }
         } catch (e) { console.error("Auto archive error", e); }
+    }
+
+    /* --- ARCHIVE VIEWER WITH MODAL --- */
+    let currentArchiveList = []; // Store data globally for modal access
+
+    async function loadArchives() {
+        const source = document.getElementById('arch-source').value;
+        const binId = BINS[source];
+        const cont = document.getElementById('arch-viewer');
+        cont.innerHTML = 'Fetching...';
+
+        try {
+            const r = await fetch(getFreshUrl(`https://api.jsonbin.io/v3/b/${binId}/latest`), {headers:{'X-Master-Key':MASTER_KEY}});
+            const d = (await r.json()).record;
+            currentArchiveList = d.archive || [];
+            
+            if(currentArchiveList.length === 0) { cont.innerHTML = 'No archives found.'; return; }
+
+            // Group by Year -> Month
+            const grouped = {};
+            currentArchiveList.forEach((item, index) => {
+                // Determine date property based on source for sorting
+                let dProp = 'validUntil'; 
+                if(source === 'snow') dProp = 'validTo';
+                if(source === 'sig') dProp = 'date';
+                if(source === 'alerts') dProp = 'endTime';
+                
+                const date = new Date(item[dProp] || item.archivedAt || new Date());
+                const y = date.getFullYear();
+                const m = date.toLocaleString('default', { month: 'long' });
+                
+                if(!grouped[y]) grouped[y] = {};
+                if(!grouped[y][m]) grouped[y][m] = [];
+                // Store index to reference original item in array
+                grouped[y][m].push({item, index});
+            });
+
+            // Render
+            let html = '';
+            for(const y of Object.keys(grouped).sort().reverse()) {
+                for(const m of Object.keys(grouped[y])) {
+                    let itemsHtml = grouped[y][m].map(obj => {
+                        const i = obj.item;
+                        let summary = i.title || i.weatherType || i.region || i.mainTitle || 'Forecast';
+                        let dateStr = i.date || i.validFrom || i.startTime || 'N/A';
+                        return `<div class="arch-item" onclick="viewArchiveDetail(${obj.index})">
+                            <strong>${new Date(dateStr).toLocaleDateString()}</strong> - ${summary}
+                            <span>View &rarr;</span>
+                        </div>`;
+                    }).join('');
+                    
+                    html += `<div class="year-block" onclick="this.classList.toggle('open')">
+                        <div class="year-head"><span>${y} - ${m}</span> <span>${grouped[y][m].length} items</span></div>
+                        <div class="month-block">${itemsHtml}</div>
+                    </div>`;
+                }
+            }
+            cont.innerHTML = html;
+
+        } catch(e) { cont.innerHTML = 'Error loading archives: ' + e.message; }
+    }
+
+    function viewArchiveDetail(index) {
+        const item = currentArchiveList[index];
+        const source = document.getElementById('arch-source').value;
+        const body = document.getElementById('arch-detail-body');
+        
+        let html = '';
+
+        if (source === 'storm') {
+            html = `
+                <h2 style="color:var(--primary)">${item.title}</h2>
+                <p><strong>Valid:</strong> ${new Date(item.validFrom).toLocaleString()} &rarr; ${new Date(item.validUntil).toLocaleString()}</p>
+                <p style="margin-bottom:20px">${item.overallDiscussion}</p>
+                ${item.mapUrl ? `<img src="${item.mapUrl}" class="detail-map">` : ''}
+                <h3>Regional Forecasts</h3>
+                ${(item.regionalForecasts||[]).map(r => `
+                    <div class="detail-region">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <strong>${r.regionName}</strong>
+                            <span class="badge" style="background:${r.riskLevel==='High'?'red':r.riskLevel==='Severe'?'purple':'orange'}">${r.riskLevel}</span>
+                        </div>
+                        <small style="color:#666;">${r.timing}</small>
+                        <div style="margin:5px 0;">Risk: ${(r.risks||[]).join(', ')}</div>
+                        <p style="margin:0">${r.threats}</p>
+                    </div>
+                `).join('')}
+            `;
+        } else if (source === 'alerts') {
+            html = `
+                <h2 style="color:${item.type==='Critical'?'red':'orange'}">${item.weatherType} (${item.type})</h2>
+                <p><strong>Regions:</strong> ${item.regions.join(', ')}</p>
+                <p><strong>Timing:</strong> ${new Date(item.startTime).toLocaleString()} &rarr; ${new Date(item.endTime).toLocaleString()}</p>
+                <hr style="margin:15px 0; border:0; border-top:1px solid #eee;">
+                <h3>Details</h3>
+                <p style="white-space:pre-line">${item.summary}</p>
+            `;
+        } else if (source === 'snow') {
+            html = `
+                <h2>${item.mainTitle || 'SnowCast'}</h2>
+                <p><strong>Overview:</strong> ${item.overview || ''}</p>
+                <h3>Forecast Details</h3>
+                <div class="detail-region">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>${item.region}</strong>
+                        <span class="badge">${item.riskLevel}</span>
+                    </div>
+                    <p>Valid: ${new Date(item.validFrom).toLocaleString()} &rarr; ${new Date(item.validTo).toLocaleString()}</p>
+                    <p style="margin-top:10px;">${item.summary}</p>
+                </div>
+            `;
+        } else if (source === 'sig') {
+            html = `
+                <h2>Outlook for ${new Date(item.date).toLocaleDateString()}</h2>
+                <span class="badge" style="font-size:1rem; margin-bottom:15px;">Risk Level: ${item.alertLevel}</span>
+                ${item.imageUrl ? `<img src="${item.imageUrl}" class="detail-map" style="margin-top:15px">` : ''}
+                <p style="margin-top:15px; font-size:1.1rem;">${item.summary}</p>
+            `;
+        }
+
+        body.innerHTML = html;
+        document.getElementById('arch-modal').style.display = 'flex';
     }
 
     /* --- STORMCAST --- */
     const STORM_RISKS = ["Heavy Rain", "Downpours", "Small Hail", "Large Hail", "Hail", "Small Tornadoes", "Large Tornadoes", "Damaging Tornadoes", "Severe Gales", "Lightning"];
     let stormOutlooks=[]; let editStormIdx=-1;
-    async function loadStorm(){ await autoArchive(BINS.storm, 'outlooks', 'archive', 'validUntil', 'iso'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.storm}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; stormOutlooks=d.outlooks||[]; renderStorm(); }
+    async function loadStorm(){ await autoArchive(BINS.storm, 'outlooks', 'archive', 'validUntil', 'iso'); const d=(await(await fetch(getFreshUrl(`https://api.jsonbin.io/v3/b/${BINS.storm}/latest`),{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; stormOutlooks=d.outlooks||[]; renderStorm(); }
     function renderStorm(){ const c=document.getElementById('stc-forecast-entries-container'); c.innerHTML=''; stormOutlooks.forEach((o,i)=>{c.innerHTML+=`<div class="card" style="padding:1rem;display:flex;justify-content:space-between;"><span><strong>${o.title}</strong><br>Exp: ${new Date(o.validUntil).toLocaleString()}</span><div><button onclick="openStcForm('edit',${i})" class="btn-primary btn-sm">Edit</button> <button onclick="delStorm(${i})" class="btn-danger btn-sm">Delete</button></div></div>`}); }
     function openStcForm(m,i){ document.getElementById('stc-edit-form-container').style.display='block'; document.getElementById('stc-regions-list').innerHTML=''; if(m==='edit'){ editStormIdx=i; const o=stormOutlooks[i]; document.getElementById('stc-title').value=o.title; document.getElementById('stc-start').value=o.validFrom; document.getElementById('stc-end').value=o.validUntil; document.getElementById('stc-disc').value=o.overallDiscussion; document.getElementById('stc-img-url').value=o.mapUrl; (o.regionalForecasts||[]).forEach(r=>addStcRegion(r)); } else { editStormIdx=-1; document.getElementById('stc-title').value=''; } }
     function addStcRegion(d={}){ const el=document.createElement('div'); el.className='card'; el.style.padding='1rem'; el.style.background='#f8f9fa'; let checks = STORM_RISKS.map(r => `<label class="check-label"><input type="checkbox" class="risk-cb" value="${r}" ${(d.risks||[]).includes(r)?'checked':''}> ${r}</label>`).join(''); el.innerHTML=`<div style="margin-bottom:5px;"><strong>Region</strong><button onclick="this.closest('.card').remove()" class="btn-danger btn-sm" style="float:right">X</button></div><div class="form-group"><label>Region Name</label><input class="r-name" value="${d.regionName||''}"></div><div class="form-group"><label>Timeframe</label><input class="r-time" value="${d.timing||''}"></div><div class="form-group"><label>Risks</label><div class="checkbox-grid">${checks}</div></div><div class="form-group"><label>Risk Level</label><select class="r-level"><option>Slight</option><option>Enhanced</option><option>High</option><option>Critical</option><option>Downpours</option></select></div><textarea class="r-desc" rows="2">${d.threats||''}</textarea>`; if(d.riskLevel) el.querySelector('.r-level').value=d.riskLevel; document.getElementById('stc-regions-list').appendChild(el); }
@@ -217,33 +408,31 @@
     async function delStorm(i){ stormOutlooks.splice(i,1); await fetch(`https://api.jsonbin.io/v3/b/${BINS.storm}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({outlooks:stormOutlooks})}); renderStorm(); }
 
     /* --- SIG WEATHER --- */
-    async function loadSig(){ await autoArchive(BINS.sig, 'forecasts', 'archive', 'date', 'date'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.sig}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('swo-overallTitle').value=d.overallTitle||''; document.getElementById('swo-overallSummary').value=d.overallSummary||''; const c=document.getElementById('swo-entries-container'); c.innerHTML=''; (d.forecasts||[]).forEach(f=>createSigEntry(f)); }
+    async function loadSig(){ await autoArchive(BINS.sig, 'forecasts', 'archive', 'date', 'date'); const d=(await(await fetch(getFreshUrl(`https://api.jsonbin.io/v3/b/${BINS.sig}/latest`),{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('swo-overallTitle').value=d.overallTitle||''; document.getElementById('swo-overallSummary').value=d.overallSummary||''; const c=document.getElementById('swo-entries-container'); c.innerHTML=''; (d.forecasts||[]).forEach(f=>createSigEntry(f)); }
     function createSigEntry(d={}){ const el=document.createElement('div'); el.className='card'; el.style.background='#f9fafb'; el.innerHTML=`<div style="display:flex;justify-content:space-between"><h4>Day</h4><button onclick="this.closest('.card').remove()" class="btn-danger btn-sm">X</button></div><div class="grid-2"><input type="date" class="d" value="${d.date||''}"><select class="l"><option>None</option><option>Slight</option><option>Enhanced</option><option>High</option></select></div><textarea class="s" rows="2" style="margin-top:5px;">${d.summary||''}</textarea><input type="hidden" class="u" value="${d.imageUrl||''}"><input type="file" class="f">`; if(d.alertLevel) el.querySelector('.l').value=d.alertLevel; el.querySelector('.f').onchange=async(e)=>{el.querySelector('.u').value=await uploadImage(e.target.files[0]); showToast('Image Ready');}; document.getElementById('swo-entries-container').appendChild(el); }
     async function saveSigWeather(){ showToast('Saving...'); const f=Array.from(document.querySelectorAll('#swo-entries-container .card')).map(e=>({date:e.querySelector('.d').value, alertLevel:e.querySelector('.l').value, summary:e.querySelector('.s').value, imageUrl:e.querySelector('.u').value})); await fetch(`https://api.jsonbin.io/v3/b/${BINS.sig}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({overallTitle:document.getElementById('swo-overallTitle').value,overallSummary:document.getElementById('swo-overallSummary').value,forecasts:f})}); showToast('Saved!'); }
 
     /* --- ALERTS --- */
-    let alertBlocks=[]; async function loadAlerts(){ await autoArchive(BINS.alerts, 'blocks', 'archive', 'endTime', 'iso'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.alerts}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('ag-bulletin-title').value=d.globalInfo?.title||''; document.getElementById('ag-bulletin-overview').value=d.globalInfo?.overview||''; alertBlocks=d.blocks||[]; renderAlerts(); }
+    let alertBlocks=[]; async function loadAlerts(){ await autoArchive(BINS.alerts, 'blocks', 'archive', 'endTime', 'iso'); const d=(await(await fetch(getFreshUrl(`https://api.jsonbin.io/v3/b/${BINS.alerts}/latest`),{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('ag-bulletin-title').value=d.globalInfo?.title||''; document.getElementById('ag-bulletin-overview').value=d.globalInfo?.overview||''; alertBlocks=d.blocks||[]; renderAlerts(); }
     function renderAlerts(){ const c=document.getElementById('ag-active-alerts-list'); c.innerHTML=''; alertBlocks.forEach((b,i)=>{c.innerHTML+=`<div class="card" style="padding:1rem;border-left:4px solid blue;"><strong>${b.weatherType}</strong><br>Regions: ${b.regions.join(', ')}<br><button onclick="delAlert(${i})" class="btn-danger btn-sm" style="margin-top:5px">Delete</button></div>`;}); }
     function addAlertBlock(){ alertBlocks.push({id:Date.now(), type:document.getElementById('ag-alertType-sel').value, weatherType:document.getElementById('ag-weather-type').value, regions:document.getElementById('ag-regions').value.split(',').map(s=>s.trim()), startTime:document.getElementById('ag-start-time').value, endTime:document.getElementById('ag-end-time').value, summary:document.getElementById('ag-block-summary').value}); renderAlerts(); }
     function delAlert(i){ alertBlocks.splice(i,1); renderAlerts(); }
     async function publishAlerts(){ showToast('Publishing...'); await fetch(`https://api.jsonbin.io/v3/b/${BINS.alerts}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({globalInfo:{title:document.getElementById('ag-bulletin-title').value, overview:document.getElementById('ag-bulletin-overview').value}, blocks:alertBlocks})}); showToast('Published!'); }
 
     /* --- NEWS & DROUGHT & SNOW (Simplified Loaders) --- */
-    let newsList=[]; async function loadNews(){ try{const r=await fetch(`https://api.jsonbin.io/v3/b/${BINS.news}/latest`,{headers:{'X-Master-Key':MASTER_KEY}}); const j=await r.json(); newsList=j.record.news||[]; renderNews();}catch(e){}}
+    let newsList=[]; async function loadNews(){ try{const r=await fetch(getFreshUrl(`https://api.jsonbin.io/v3/b/${BINS.news}/latest`),{headers:{'X-Master-Key':MASTER_KEY}}); const j=await r.json(); newsList=j.record.news||[]; renderNews();}catch(e){}}
     function renderNews(){ const c=document.getElementById('news-list-container'); c.innerHTML=''; newsList.forEach((n,i)=>{c.innerHTML+=`<div class="card" style="padding:1rem; background:#f9fafb"><strong>${n.title}</strong> (${n.date}) <button onclick="delNews(${i})" class="btn-danger btn-sm" style="float:right">Delete</button></div>`}); }
     function addNewsItem(){ const tImgFile = document.getElementById('news-title-img').files[0]; let tImgUrl = document.getElementById('news-title-img-url').value; if(tImgFile) { showToast('Uploading...'); tImgUrl = "MOCK_URL"; } newsList.unshift({title:document.getElementById('news-title').value, date:document.getElementById('news-date').value, tag:document.getElementById('news-tag').value, content:document.getElementById('news-content').value, scheduledAt:document.getElementById('news-schedule').value || new Date().toISOString(), titleImg: tImgUrl }); renderNews(); }
     function delNews(i){ newsList.splice(i,1); renderNews(); }
     async function saveNewsData(){ showToast('Publishing...'); await fetch(`https://api.jsonbin.io/v3/b/${BINS.news}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({news:newsList})}); showToast('Published!'); }
 
-    // Loaders for Snow & Drought (Existing Logic)
-    async function loadSnow(){ await autoArchive(BINS.snow, 'forecasts', 'archive', 'validTo', 'iso'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.snow}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('sc-main-title').value=d.mainTitle||''; document.getElementById('sc-main-overview').value=d.overview||''; const c=document.getElementById('sc-regions-container'); c.innerHTML=''; (d.forecasts||[]).forEach(f=>addSnowRegion(f)); }
+    // Loaders for Snow & Drought
+    async function loadSnow(){ await autoArchive(BINS.snow, 'forecasts', 'archive', 'validTo', 'iso'); const d=(await(await fetch(getFreshUrl(`https://api.jsonbin.io/v3/b/${BINS.snow}/latest`),{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('sc-main-title').value=d.mainTitle||''; document.getElementById('sc-main-overview').value=d.overview||''; const c=document.getElementById('sc-regions-container'); c.innerHTML=''; (d.forecasts||[]).forEach(f=>addSnowRegion(f)); }
     function addSnowRegion(d={}){ const el=document.createElement('div'); el.className='card'; el.style.padding='1rem'; el.style.background='#f8f9fa'; el.innerHTML=`<div style="display:flex;justify-content:space-between"><strong>Region</strong><button onclick="this.closest('.card').remove()" class="btn-danger btn-sm">X</button></div><div class="grid-2"><input class="n" value="${d.region||''}" placeholder="Name"><select class="r"><option>Slight</option><option>High</option></select></div><textarea class="s" style="margin-top:5px" rows="2">${d.summary||''}</textarea><div class="grid-2"><input type="datetime-local" class="vf" value="${d.validFrom||''}"><input type="datetime-local" class="vt" value="${d.validTo||''}"></div>`; if(d.riskLevel) el.querySelector('.r').value=d.riskLevel; document.getElementById('sc-regions-container').appendChild(el); }
     async function saveSnowCast(){ showToast('Saving...'); const f=Array.from(document.querySelectorAll('#sc-regions-container .card')).map(e=>({region:e.querySelector('.n').value, riskLevel:e.querySelector('.r').value, summary:e.querySelector('.s').value, validFrom:e.querySelector('.vf').value, validTo:e.querySelector('.vt').value})); await fetch(`https://api.jsonbin.io/v3/b/${BINS.snow}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':MASTER_KEY},body:JSON.stringify({mainTitle:document.getElementById('sc-main-title').value, overview:document.getElementById('sc-main-overview').value, forecasts:f})}); showToast('Saved!'); }
 
-    async function loadDrought(){ await autoArchive(BINS.drought, 'alerts', 'archive', 'endDate', 'date'); const d=(await(await fetch(`https://api.jsonbin.io/v3/b/${BINS.drought}/latest`,{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('dc-overview-title').value=d.overview.title||''; document.getElementById('dc-overview-summary').value=d.overview.summary||''; const c=document.getElementById('dc-alert-list'); c.innerHTML=''; (d.alerts||[]).forEach(a=>{c.innerHTML+=`<div class="card" style="padding:1rem; background:#fff3cd"><strong>${a.region}</strong> (${a.severity}) <button onclick="delDrought()" class="btn-danger btn-sm" style="float:right">X</button></div>`;}); }
-    async function saveDroughtOverview(){ /* ... */ }
-    function addDroughtAlert(){ /* ... */ }
-
+    async function loadDrought(){ await autoArchive(BINS.drought, 'alerts', 'archive', 'endDate', 'date'); const d=(await(await fetch(getFreshUrl(`https://api.jsonbin.io/v3/b/${BINS.drought}/latest`),{headers:{'X-Master-Key':MASTER_KEY}})).json()).record; document.getElementById('dc-overview-title').value=d.overview.title||''; document.getElementById('dc-overview-summary').value=d.overview.summary||''; const c=document.getElementById('dc-alert-list'); c.innerHTML=''; (d.alerts||[]).forEach(a=>{c.innerHTML+=`<div class="card" style="padding:1rem; background:#fff3cd"><strong>${a.region}</strong> (${a.severity}) <button onclick="delDrought()" class="btn-danger btn-sm" style="float:right">X</button></div>`;}); }
+    
     // INIT
     loadAlerts(); loadSig(); loadStorm(); loadSnow(); loadDrought(); loadNews();
 </script>
