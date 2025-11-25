@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMA Admin V36 (Advanced Archive)</title>
+    <title>SIMA Admin V37 (Fixed Archive)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -97,27 +97,27 @@
             border-bottom: 1px solid var(--border);
             align-items: end;
         }
-        .archive-toolbar label { font-size: 0.75rem; margin-bottom: 4px; color: #6b7280; }
+        .archive-toolbar label { font-size: 0.75rem; margin-bottom: 4px; color: #6b7280; font-weight:600; }
         .archive-toolbar select, .archive-toolbar input { padding: 8px; font-size: 0.85rem; }
         .archive-toolbar button { padding: 8px; font-size: 0.85rem; }
 
         .archive-wrapper { display: flex; gap: 20px; height: 650px; border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; background: white; }
-        .archive-tree { width: 30%; border-right: 1px solid var(--border); overflow-y: auto; padding: 15px; background: #f9fafb; }
-        .archive-viewer { width: 70%; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .archive-tree { width: 300px; border-right: 1px solid var(--border); overflow-y: auto; padding: 15px; background: #f9fafb; flex-shrink: 0; }
+        .archive-viewer { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         
         /* Tree Structure */
-        .tree-year { font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: #374151; padding: 5px; border-radius: 4px; }
+        .tree-year { font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: #374151; padding: 8px; border-radius: 4px; background:white; border:1px solid #e5e7eb; }
         .tree-year:hover { background: #e5e7eb; }
         .tree-year::before { content: '📂'; font-size: 0.9rem; }
         
-        .month-container { display: none; margin-left: 15px; border-left: 2px solid #e5e7eb; padding-left: 10px; }
+        .month-container { display: none; margin-left: 10px; border-left: 2px solid #e5e7eb; padding-left: 10px; margin-top:5px; margin-bottom:5px;}
         .tree-year.open + .month-container { display: block; }
         
-        .tree-month { font-weight: 600; margin-bottom: 3px; cursor: pointer; color: #4b5563; padding: 4px; border-radius: 4px; display: flex; align-items: center; gap: 5px; }
+        .tree-month { font-weight: 600; margin-bottom: 3px; cursor: pointer; color: #4b5563; padding: 6px; border-radius: 4px; display: flex; align-items: center; gap: 5px; }
         .tree-month:hover { background: #e5e7eb; color: var(--primary); }
         .tree-month::before { content: '📁'; font-size: 0.8rem; }
         
-        .day-container { display: none; margin-left: 15px; border-left: 2px solid #e5e7eb; padding-left: 10px; margin-bottom: 10px; }
+        .day-container { display: none; margin-left: 15px; border-left: 2px solid #e5e7eb; padding-left: 10px; margin-bottom: 5px; }
         .tree-month.open + .day-container { display: block; }
 
         .day-item { padding: 6px 10px; cursor: pointer; color: #6b7280; border-radius: 4px; font-size: 0.85rem; margin-bottom: 2px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
@@ -344,7 +344,7 @@
                         </select>
                     </div>
                     <div style="display:flex; align-items:end;">
-                        <button class="btn-success" onclick="downloadArchive()" style="width:100%; font-size:0.8rem;">Download Data</button>
+                        <button class="btn-success" onclick="downloadArchive()" style="width:100%; font-size:0.8rem;">Download JSON</button>
                     </div>
                 </div>
 
@@ -358,10 +358,6 @@
                             <p>Select a date folder to view archived forecasts.</p>
                         </div>
                     </div>
-                </div>
-                <div style="padding:15px; background:#f3f4f6; border-top:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center;">
-                    <small style="color:#6b7280;">Archives include data from all modules.</small>
-                    <button class="btn-secondary btn-sm" onclick="loadGlobalArchives()">Refresh Archives</button>
                 </div>
             </div>
         </div>
@@ -418,41 +414,72 @@ async function upImg(el) { if(!el.files[0]) return null; const fd = new FormData
 
 // --- LOADERS ---
 async function init() {
-    // ALERTS
-    fetch(getFresh(api('alerts')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d => {
-        data.alerts = d.record.blocks || [];
-        archives.alerts = d.record.archive || [];
-        document.getElementById('ag-title').value = d.record.globalInfo?.title||'';
-        document.getElementById('ag-over').value = d.record.globalInfo?.overview||'';
+    // We must wait for ALL fetches before we can reliably build the archive
+    try {
+        const [alertRes, stormRes, snowRes, sigRes, droughtRes] = await Promise.all([
+            fetch(getFresh(api('alerts')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()),
+            fetch(getFresh(api('storm')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()),
+            fetch(getFresh(api('snow')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()),
+            fetch(getFresh(api('sig')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()),
+            fetch(getFresh(api('drought')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json())
+        ]);
+
+        // 1. ALERTS
+        data.alerts = alertRes.record.blocks || [];
+        archives.alerts = alertRes.record.archive || [];
+        document.getElementById('ag-title').value = alertRes.record.globalInfo?.title||'';
+        document.getElementById('ag-over').value = alertRes.record.globalInfo?.overview||'';
         renderAlerts();
-    });
 
-    // STORMCAST
-    fetch(getFresh(api('storm')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d => {
-        data.storm = d.record.outlooks || [];
-        archives.storm = d.record.archive || [];
+        // 2. STORMCAST
+        data.storm = stormRes.record.outlooks || [];
+        archives.storm = stormRes.record.archive || [];
         renderStormList();
-    });
 
-    // SNOWCAST
-    fetch(getFresh(api('snow')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d => {
-        data.snow = d.record.forecasts || [];
-        archives.snow = d.record.archive || [];
-        document.getElementById('sc-title').value = d.record.mainTitle||'';
-        document.getElementById('sc-over').value = d.record.overview||'';
+        // 3. SNOWCAST
+        data.snow = snowRes.record.forecasts || [];
+        archives.snow = snowRes.record.archive || [];
+        document.getElementById('sc-title').value = snowRes.record.mainTitle||'';
+        document.getElementById('sc-over').value = snowRes.record.overview||'';
         renderSnowList();
-    });
 
-    // DROUGHT
-    fetch(getFresh(api('drought')+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d => {
-        data.drought = d.record.alerts || [];
-        document.getElementById('dc-title').value = d.record.overview?.title||'';
-        document.getElementById('dc-sum').value = d.record.overview?.summary||'';
+        // 4. DROUGHT
+        data.drought = droughtRes.record.alerts || [];
+        document.getElementById('dc-title').value = droughtRes.record.overview?.title||'';
+        document.getElementById('dc-sum').value = droughtRes.record.overview?.summary||'';
         renderDroughtList();
-    });
 
-    // SIG WEATHER (Special Load)
-    loadSig();
+        // 5. SIG WEATHER
+        const d = sigRes.record;
+        document.getElementById('swo-overallTitle').value = d.overallTitle || '';
+        document.getElementById('swo-overallSummary').value = d.overallSummary || '';
+        sigArchiveData = d.archive || [];
+        
+        const todayNZ = new Date().toISOString().split('T')[0];
+        sigActiveForecasts = [];
+        let dataModified = false;
+
+        (d.forecasts || []).forEach(f => {
+            if (f.date && f.date >= todayNZ) {
+                sigActiveForecasts.push(f);
+            } else if (f.date) {
+                sigArchiveData.push(f);
+                dataModified = true;
+            }
+        });
+        sigActiveForecasts.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        const container = document.getElementById('swo-entries-container');
+        container.innerHTML = '';
+        sigActiveForecasts.forEach(f => createSigEntryElement(f));
+        if(dataModified) saveSigWeather(true);
+
+        console.log("All data loaded. Archives ready.");
+
+    } catch (error) {
+        console.error("Critical Load Error:", error);
+        toast("Error loading data. Check console.");
+    }
 }
 
 // --- ALERTS LOGIC ---
@@ -547,41 +574,6 @@ async function saveSnow() {
 }
 
 /* --- SIG WEATHER LOGIC --- */
-async function loadSig() {
-    try {
-        const r = await fetch(getFresh(api('sig')+'/latest'), {headers:{'X-Master-Key':KEY}});
-        const d = (await r.json()).record;
-        document.getElementById('swo-overallTitle').value = d.overallTitle || '';
-        document.getElementById('swo-overallSummary').value = d.overallSummary || '';
-        
-        sigArchiveData = d.archive || [];
-        const allForecasts = d.forecasts || [];
-        
-        const todayNZ = new Date().toISOString().split('T')[0];
-        
-        sigActiveForecasts = [];
-        let dataModified = false;
-
-        allForecasts.forEach(f => {
-            if (f.date && f.date >= todayNZ) {
-                sigActiveForecasts.push(f);
-            } else if (f.date) {
-                sigArchiveData.push(f);
-                dataModified = true;
-            }
-        });
-
-        sigActiveForecasts.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
-        const container = document.getElementById('swo-entries-container');
-        container.innerHTML = '';
-        sigActiveForecasts.forEach(f => createSigEntryElement(f));
-        
-        if (dataModified) saveSigWeather(true);
-
-    } catch(e) { console.error("Sig load error", e); }
-}
-
 function createSigEntryElement(entryData = {}) {
     const id = entryData.id || `entry-${Date.now()}-${Math.random()}`;
     const container = document.getElementById('swo-entries-container');
@@ -628,7 +620,6 @@ function createSigEntry() { createSigEntryElement(); }
 
 async function saveSigWeather(isSilent = false) {
     if(!isSilent) toast('Saving...');
-    
     const entries = document.querySelectorAll('.daily-forecast-card');
     const promises = Array.from(entries).map(async (entry) => {
         const fileInput = entry.querySelector('.forecast-image-upload');
@@ -644,9 +635,7 @@ async function saveSigWeather(isSilent = false) {
             imageUrl: url
         };
     });
-    
     const newForecasts = (await Promise.all(promises)).filter(f => f.date);
-    
     await fetch(api('sig'), {
         method:'PUT', headers, 
         body:JSON.stringify({
@@ -656,8 +645,7 @@ async function saveSigWeather(isSilent = false) {
             archive: sigArchiveData
         })
     });
-    
-    if(!isSilent) { toast('Published!'); loadSig(); }
+    if(!isSilent) { toast('Published!'); }
 }
 
 // --- DROUGHT LOGIC ---
@@ -687,25 +675,25 @@ let filteredArchives = [];
 function loadGlobalArchives() {
     allArchives = []; 
 
-    // 1. Alerts
+    // 1. Alerts (Active + Archive)
     [...(data.alerts||[]), ...(archives.alerts||[])].forEach(i => {
         if(!i.startTime) return;
         allArchives.push({ date: i.startTime.split('T')[0], type: 'Alert', tag: 'tag-alert', title: i.weatherType, sub: (i.type || 'Warning') + ' - ' + (i.regions || 'General'), text: i.summary, fullData: i });
     });
 
-    // 2. StormCast
+    // 2. StormCast (Active + Archive)
     [...(data.storm||[]), ...(archives.storm||[])].forEach(i => {
         if(!i.validFrom) return;
         allArchives.push({ date: i.validFrom.split('T')[0], type: 'StormCast', tag: 'tag-storm', title: i.title || 'Thunderstorm Risk', sub: 'Convective Outlook', text: i.overallDiscussion, img: i.mapUrl, fullData: i });
     });
 
-    // 3. SnowCast
+    // 3. SnowCast (Active + Archive)
     [...(data.snow||[]), ...(archives.snow||[])].forEach(i => {
         if(!i.validFrom) return;
         allArchives.push({ date: i.validFrom.split('T')[0], type: 'SnowCast', tag: 'tag-snow', title: i.region + ' (' + (i.riskLevel || 'Risk') + ')', sub: 'Snow Warning', text: i.summary, fullData: i });
     });
 
-    // 4. Sig Weather
+    // 4. Sig Weather (Active + Archive)
     [...sigActiveForecasts, ...sigArchiveData].forEach(i => {
         if(!i.date) return;
         allArchives.push({ date: i.date, type: 'Sig Weather', tag: 'tag-sig', title: 'Outlook: ' + (i.alertLevel || 'General'), sub: 'Significant Weather', text: i.summary, img: i.imageUrl, fullData: i });
