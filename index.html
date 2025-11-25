@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMA Admin V38 (Robust Archive)</title>
+    <title>SIMA Admin V39 (Mobile Responsive)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -34,7 +34,7 @@
         .nav-btn.active { background-color: var(--primary); color: white; transform: translateX(4px); box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
 
         /* CONTENT AREA */
-        .main-content { flex-grow: 1; overflow-y: auto; padding: 2.5rem; position: relative; scroll-behavior: smooth; }
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 2.5rem; position: relative; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
         h1 { font-size: 1.8rem; margin-top: 0; margin-bottom: 1.5rem; font-weight: 800; color: #111827; letter-spacing: -0.5px; border-bottom: 2px solid var(--border); padding-bottom: 1rem; }
         h2 { font-size: 1.4rem; margin-top: 2rem; margin-bottom: 1rem; color: #374151; font-weight: 700; }
         h3 { font-size: 1.1rem; margin-top: 0; margin-bottom: 1rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem; }
@@ -70,7 +70,7 @@
         @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
         .toast { position: fixed; bottom: 30px; right: 30px; background: #1f2937; color: white; padding: 14px 28px; border-radius: 50px; z-index: 9999; display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); font-weight: 500; }
         
-        /* LIST STYLES (Used in Staging areas) */
+        /* LIST STYLES */
         .item-list-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f9fafb; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e5e7eb; transition: background 0.2s; }
         .item-list-row:hover { background: #f3f4f6; }
         .sub-item { background: white; padding: 16px; border: 1px solid #e5e7eb; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
@@ -86,7 +86,7 @@
         .remove-day-btn { background: transparent; color: #9ca3af; border: none; font-size: 1.5rem; cursor: pointer; padding: 4px; line-height: 1; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
         .remove-day-btn:hover { background: #fee2e2; color: #ef4444; }
 
-        /* --- ARCHIVE SYSTEM STYLES --- */
+        /* --- ARCHIVE SYSTEM --- */
         .archive-toolbar {
             display: grid; 
             grid-template-columns: 1.5fr 1fr 1fr 1fr; 
@@ -103,7 +103,7 @@
         .archive-tree { width: 300px; border-right: 1px solid var(--border); overflow-y: auto; padding: 15px; background: #f9fafb; flex-shrink: 0; }
         .archive-viewer { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         
-        /* Tree Structure */
+        /* Tree */
         .tree-year { font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #374151; padding: 8px; border-radius: 4px; background:white; border:1px solid #e5e7eb; }
         .tree-year:hover { background: #e5e7eb; }
         .tree-year::before { content: '📂'; font-size: 1rem; }
@@ -119,11 +119,11 @@
         .tree-month.open + .day-container { display: block; }
 
         .day-item { padding: 6px 10px; cursor: pointer; color: #6b7280; border-radius: 4px; font-size: 0.85rem; margin-bottom: 2px; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
-        .day-item::before { content: '📄'; font-size: 0.9rem; opacity: 0.7; } /* Tiny folder/file icon */
+        .day-item::before { content: '📄'; font-size: 0.9rem; opacity: 0.7; }
         .day-item:hover { background: #e5e7eb; color: var(--text-main); }
         .day-item.selected { background: #eff6ff; color: var(--primary); font-weight: 600; border-left: 3px solid var(--primary); }
 
-        /* Archive Items in Viewer */
+        /* Archive Viewer Items */
         .arch-entry { border: 1px solid var(--border); border-radius: 8px; padding: 20px; background: white; transition: all 0.2s; cursor: pointer; display: flex; gap: 15px; align-items: start; }
         .arch-entry:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .arch-thumb { width: 80px; height: 80px; border-radius: 6px; object-fit: cover; background: #f3f4f6; border: 1px solid var(--border); flex-shrink: 0; }
@@ -153,11 +153,42 @@
         
         .am-footer { padding: 20px; border-top: 1px solid var(--border); background: #f9fafb; text-align: right; }
 
+        /* --- RESPONSIVE / MOBILE CSS --- */
         @media (max-width: 900px) {
-            .archive-toolbar { grid-template-columns: 1fr 1fr; }
-            .archive-wrapper { flex-direction: column; height: auto; }
-            .archive-tree { width: 100%; height: 250px; border-right: none; border-bottom: 1px solid var(--border); }
-            .archive-viewer { width: 100%; }
+            /* Reset Layout */
+            #sima-admin-wrapper { flex-direction: column; height: 100vh; width: 100%; border-radius: 0; }
+            body { background-color: #f3f4f6; }
+
+            /* Top Navigation Bar (Scrollable) */
+            .sidebar { 
+                width: 100%; flex-direction: row; overflow-x: auto; 
+                padding: 10px 15px; border-right: none; border-bottom: 1px solid var(--border); 
+                height: auto; flex-shrink: 0; background: white; align-items: center; 
+                white-space: nowrap; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            }
+            .brand { display: none; } /* Hide brand on mobile to save space */
+            .nav-btn { width: auto; margin: 0 5px; padding: 8px 12px; font-size: 0.85rem; }
+            
+            /* Content Area */
+            .main-content { padding: 15px; }
+            h1 { font-size: 1.5rem; }
+
+            /* Grids collapse to single column */
+            .grid-2 { grid-template-columns: 1fr; gap: 1rem; }
+            
+            /* Archive System Mobile */
+            .archive-toolbar { grid-template-columns: 1fr; gap: 10px; }
+            .archive-wrapper { flex-direction: column; height: auto; min-height: 600px; }
+            .archive-tree { width: 100%; height: 220px; border-right: none; border-bottom: 1px solid var(--border); }
+            .archive-viewer { width: 100%; height: 400px; padding: 15px; }
+            .arch-entry { padding: 15px; }
+            .arch-thumb { width: 60px; height: 60px; }
+
+            /* Archive Modal Mobile */
+            .arch-modal { width: 95%; max-height: 85vh; }
+            .am-body { padding: 20px; }
+            .am-head { padding: 15px 20px; }
+            .am-img { max-height: 300px; }
         }
 
     </style>
@@ -355,7 +386,7 @@
                     </div>
                 </div>
                 <div style="padding:15px; background:#f3f4f6; border-top:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center;">
-                    <small style="color:#6b7280;">Full historical and active data.</small>
+                    <small style="color:#6b7280;">Archives include full historical and active data.</small>
                     <button class="btn-secondary btn-sm" onclick="loadGlobalArchives()">Force Refresh</button>
                 </div>
             </div>
@@ -415,7 +446,7 @@ async function upImg(el) { if(!el.files[0]) return null; const fd = new FormData
 async function init() {
     const fetchBin = (name) => fetch(getFresh(api(name)+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).catch(e => ({record:{}}));
 
-    // Fetch all concurrently, but safely
+    // Fetch all concurrently
     const [alertRes, stormRes, snowRes, sigRes, droughtRes] = await Promise.all([
         fetchBin('alerts'), fetchBin('storm'), fetchBin('snow'), fetchBin('sig'), fetchBin('drought')
     ]);
@@ -474,12 +505,11 @@ async function init() {
     sigActiveForecasts.forEach(f => createSigEntryElement(f));
     if(dataModified) saveSigWeather(true);
 
-    // LOAD ARCHIVE TREE IMMEDIATELY
+    // LOAD ARCHIVE TREE
     loadGlobalArchives();
 }
 
 /* --- MODULE FUNCTIONS --- */
-// Alerts
 function renderAlerts() {
     const c = document.getElementById('ag-list'); c.innerHTML = '';
     data.alerts.forEach((a,i) => {
@@ -494,7 +524,6 @@ async function saveAlerts() {
     toast('Saving...'); await fetch(api('alerts'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value }, blocks: data.alerts, archive: archives.alerts})}); toast('Published!');
 }
 
-// StormCast
 function addStcRegionUI() {
     const d = document.createElement('div'); d.className='sub-item'; d.innerHTML=`<div class="form-group"><label>Region Name</label><input class="r-name"></div><div class="form-group"><label>Risk</label><select class="r-lvl"><option>Slight</option><option>High</option></select></div><div class="form-group"><label>Details</label><textarea class="r-det"></textarea></div><button class="btn-danger btn-sm" onclick="this.parentElement.remove()">Remove</button>`;
     document.getElementById('stc-regions').appendChild(d);
@@ -512,12 +541,10 @@ function renderStormList() {
 }
 async function saveStorm() { await fetch(api('storm'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({outlooks:data.storm, archive:archives.storm})}); toast('Published!'); }
 
-// SnowCast
 function addSnowRegion() { data.snow.push({region: document.getElementById('sc-reg-name').value, riskLevel: document.getElementById('sc-reg-risk').value, validFrom: document.getElementById('sc-start').value, validTo: document.getElementById('sc-end').value, summary: document.getElementById('sc-reg-sum').value}); renderSnowList(); }
 function renderSnowList() { const c = document.getElementById('sc-regions-list'); c.innerHTML=''; data.snow.forEach((f,i) => { c.innerHTML+=`<div class="item-list-row"><div>${f.region} (${f.riskLevel})</div><button class="btn-danger btn-sm" onclick="data.snow.splice(${i},1);renderSnowList()">Del</button></div>`; }); }
 async function saveSnow() { await fetch(api('snow'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({mainTitle:document.getElementById('sc-title').value, overview:document.getElementById('sc-over').value, forecasts:data.snow, archive:archives.snow})}); toast('Published!'); }
 
-// Sig Weather
 function createSigEntryElement(entryData = {}) {
     const id = entryData.id || `entry-${Date.now()}-${Math.random()}`; const container = document.getElementById('swo-entries-container'); const div = document.createElement('div'); div.className = 'daily-forecast-card'; div.setAttribute('data-id', id);
     div.innerHTML = `<header><h3>Daily Forecast</h3><button class="remove-day-btn">×</button></header><div class="content"><div class="grid-2"><div class="form-group"><label>Date</label><input type="date" class="forecast-date" value="${entryData.date || ''}"></div><div class="form-group"><label>Alert Level</label><select class="forecast-alert-level"><option value="None" ${!entryData.alertLevel || entryData.alertLevel === 'None' ? 'selected' : ''}>None</option><option value="Slight" ${entryData.alertLevel === 'Slight' ? 'selected' : ''}>Slight</option><option value="Enhanced" ${entryData.alertLevel === 'Enhanced' ? 'selected' : ''}>Enhanced</option><option value="High" ${entryData.alertLevel === 'High' ? 'selected' : ''}>High</option><option value="Critical" ${entryData.alertLevel === 'Critical' ? 'selected' : ''}>Critical</option></select></div></div><div class="form-group image-uploader"><label>Upload Map Image</label><input type="file" class="forecast-image-upload" accept="image/*"><img class="preview ${entryData.imageUrl ? 'visible' : ''}" src="${entryData.imageUrl || ''}"><input type="hidden" class="forecast-image-url" value="${entryData.imageUrl || ''}"></div><div class="form-group"><label>Summary</label><textarea class="forecast-summary" placeholder="Enter summary...">${entryData.summary || ''}</textarea></div></div>`;
@@ -531,7 +558,7 @@ async function saveSigWeather(isSilent = false) {
     const entries = document.querySelectorAll('.daily-forecast-card');
     const promises = Array.from(entries).map(async (entry) => {
         const fileInput = entry.querySelector('.forecast-image-upload'); let url = entry.querySelector('.forecast-image-url').value;
-        if (fileInput.files[0]) { try { url = await upImg(fileInput); } catch(e){} }
+        if (fileInput.files[0]) { try { url = await upImg(fileInput); } catch(e){ console.log("Img fail", e); } }
         return { id: entry.getAttribute('data-id'), date: entry.querySelector('.forecast-date').value, summary: entry.querySelector('.forecast-summary').value, alertLevel: entry.querySelector('.forecast-alert-level').value, imageUrl: url };
     });
     const newForecasts = (await Promise.all(promises)).filter(f => f.date);
@@ -539,46 +566,45 @@ async function saveSigWeather(isSilent = false) {
     if(!isSilent) { toast('Published!'); }
 }
 
-// Drought
 function addDroughtAlert() { data.drought.push({ region: document.getElementById('dc-reg').value, severity: document.getElementById('dc-sev').value, rainPotential: document.getElementById('dc-rain').value, endDate: document.getElementById('dc-end').value, summary: document.getElementById('dc-det').value }); renderDroughtList(); }
 function renderDroughtList() { const c = document.getElementById('dc-list'); c.innerHTML=''; data.drought.forEach((a,i) => { c.innerHTML+=`<div class="item-list-row"><div>${a.region}</div><button class="btn-danger btn-sm" onclick="data.drought.splice(${i},1);renderDroughtList()">Del</button></div>`; }); }
 async function saveDrought() { await fetch(api('drought'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({overview:{title:document.getElementById('dc-title').value, summary:document.getElementById('dc-sum').value}, alerts:data.drought})}); toast('Published!'); }
 
-// --- UNIFIED ARCHIVE SYSTEM ---
+// --- ROBUST UNIFIED ARCHIVE SYSTEM ---
 let allArchives = [];
 let filteredArchives = [];
 
 function loadGlobalArchives() {
     allArchives = []; 
 
-    // Collect Alerts (Ensure proper date parsing)
+    // 1. Alerts
     [...(data.alerts||[]), ...(archives.alerts||[])].forEach(i => {
         if(!i.startTime) return;
         const d = i.startTime.includes('T') ? i.startTime.split('T')[0] : i.startTime;
         allArchives.push({ date: d, type: 'Alert', tag: 'tag-alert', title: i.weatherType, sub: (i.type || 'Warning') + ' - ' + (i.regions || 'General'), text: i.summary, fullData: i });
     });
 
-    // Collect StormCast
+    // 2. StormCast
     [...(data.storm||[]), ...(archives.storm||[])].forEach(i => {
         if(!i.validFrom) return;
         const d = i.validFrom.includes('T') ? i.validFrom.split('T')[0] : i.validFrom;
         allArchives.push({ date: d, type: 'StormCast', tag: 'tag-storm', title: i.title || 'Thunderstorm Risk', sub: 'Convective Outlook', text: i.overallDiscussion, img: i.mapUrl, fullData: i });
     });
 
-    // Collect SnowCast
+    // 3. SnowCast
     [...(data.snow||[]), ...(archives.snow||[])].forEach(i => {
         if(!i.validFrom) return;
         const d = i.validFrom.includes('T') ? i.validFrom.split('T')[0] : i.validFrom;
         allArchives.push({ date: d, type: 'SnowCast', tag: 'tag-snow', title: i.region + ' (' + (i.riskLevel || 'Risk') + ')', sub: 'Snow Warning', text: i.summary, fullData: i });
     });
 
-    // Collect Sig Weather
+    // 4. Sig Weather
     [...sigActiveForecasts, ...sigArchiveData].forEach(i => {
         if(!i.date) return;
         allArchives.push({ date: i.date, type: 'Sig Weather', tag: 'tag-sig', title: 'Outlook: ' + (i.alertLevel || 'General'), sub: 'Significant Weather', text: i.summary, img: i.imageUrl, fullData: i });
     });
 
-    // Collect DroughtCast
+    // 5. DroughtCast
     [...(data.drought||[])].forEach(i => {
         if(!i.endDate) return;
         allArchives.push({ date: i.endDate, type: 'DroughtCast', tag: 'tag-drought', title: i.region, sub: i.severity + ' Risk', text: i.summary, fullData: i });
@@ -624,7 +650,7 @@ function renderArchiveTree(tree, sortDir) {
     root.innerHTML = '';
     
     if(Object.keys(tree).length === 0) {
-        root.innerHTML = '<p style="padding:20px; color:#9ca3af;">No archives found matching criteria.</p>';
+        root.innerHTML = '<p style="padding:20px; color:#9ca3af;">No archives found.</p>';
         return;
     }
 
