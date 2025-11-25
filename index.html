@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMA Admin V33 (Unified Design)</title>
+    <title>SIMA Admin V34 (Unified Archive)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -75,7 +75,7 @@
         .item-list-row:hover { background: #f3f4f6; }
         .sub-item { background: white; padding: 16px; border: 1px solid #e5e7eb; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
 
-        /* --- SIG WEATHER SPECIFIC (Enhanced) --- */
+        /* --- SIG WEATHER SPECIFIC --- */
         .daily-forecast-card { border: 1px solid var(--border); border-radius: 12px; margin-top: 1.5rem; background: #fff; overflow: hidden; box-shadow: var(--shadow); }
         .daily-forecast-card header { background-color: #f8fafc; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
         .daily-forecast-card header h3 { margin: 0; color: var(--text-main); font-size: 1rem; }
@@ -86,26 +86,38 @@
         .remove-day-btn { background: transparent; color: #9ca3af; border: none; font-size: 1.5rem; cursor: pointer; padding: 4px; line-height: 1; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
         .remove-day-btn:hover { background: #fee2e2; color: #ef4444; }
 
-        /* ARCHIVE STYLES (Sig Weather) */
-        #sw-archive-container details { background: white; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem; overflow: hidden; }
-        #sw-archive-container summary { padding: 1rem; font-weight: 600; cursor: pointer; background-color: #f9fafb; user-select: none; transition: background 0.2s; }
-        #sw-archive-container summary:hover { background-color: #f3f4f6; }
+        /* --- NEW ARCHIVE SYSTEM Styles --- */
+        .archive-wrapper { display: flex; gap: 20px; height: 700px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: white; }
+        .archive-tree { width: 30%; border-right: 1px solid var(--border); overflow-y: auto; padding: 15px; background: #f9fafb; }
+        .archive-viewer { width: 70%; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         
-        /* Grid for archive items to show images nicely */
-        .archive-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; padding: 1rem; border-top: 1px solid var(--border); }
-        .archive-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
-        .archive-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
-        .badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-        .badge.critical { background: #7c3aed; color: white; }
-        .badge.high { background: #ef4444; color: white; }
-        .badge.enhanced { background: #f97316; color: white; }
-        .badge.slight { background: #f59e0b; color: white; }
-        .badge.none { background: #9ca3af; color: white; }
+        /* Tree Structure */
+        .tree-year { font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: #374151; }
+        .tree-year::before { content: '📂'; font-size: 0.9rem; }
+        .tree-month { margin-left: 20px; font-weight: 600; margin-bottom: 3px; cursor: pointer; color: #4b5563; display: none; } /* Hidden by default */
+        .tree-year.open + .month-container { display: block; }
         
-        .archive-body { font-size: 0.9rem; color: #4b5563; flex-grow: 1; line-height: 1.4; }
-        .archive-map-container { border-radius: 6px; overflow: hidden; border: 1px solid #e5e7eb; height: 160px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; }
-        .archive-map-container img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-        .archive-map-container img:hover { transform: scale(1.05); }
+        .month-container { display: none; }
+        .day-item { margin-left: 40px; padding: 4px 8px; cursor: pointer; color: #6b7280; border-radius: 4px; font-size: 0.9rem; border-left: 2px solid transparent; }
+        .day-item:hover { background: #e5e7eb; color: var(--primary); }
+        .day-item.selected { background: #e0e7ff; color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
+
+        /* Archive Items in Viewer */
+        .arch-entry { border: 1px solid var(--border); border-radius: 8px; padding: 15px; background: white; transition: transform 0.1s; cursor: pointer; }
+        .arch-entry:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .arch-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
+        .tag-alert { background: #fee2e2; color: #b91c1c; }
+        .tag-storm { background: #dcfce7; color: #15803d; }
+        .tag-snow { background: #e0f2fe; color: #0369a1; }
+        .tag-sig { background: #fef3c7; color: #b45309; }
+        
+        /* Archive Modal */
+        .arch-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .arch-modal { background: white; width: 800px; max-width: 95%; max-height: 90vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .am-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f9fafb; }
+        .am-body { padding: 30px; overflow-y: auto; }
+        .am-img { width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; margin-top: 15px; background: #000; }
+        .am-text { white-space: pre-line; line-height: 1.6; color: #374151; font-size: 1rem; }
 
     </style>
 </head>
@@ -223,18 +235,12 @@
             
             <div class="card">
                 <h2>Daily Forecasts</h2>
-                <p style="font-size: 0.9em; color: var(--text-muted); margin-top: -1rem; margin-bottom: 1.5rem;">Only upcoming and today's forecasts are shown here. Past forecasts are automatically moved to the Archive below.</p>
+                <p style="font-size: 0.9em; color: var(--text-muted); margin-top: -1rem; margin-bottom: 1.5rem;">Only upcoming and today's forecasts are shown here. Past forecasts are automatically moved to the System Archive.</p>
                 <div id="swo-entries-container"></div>
                 <button onclick="createSigEntry()" class="btn-secondary" style="width:100%">+ Add New Day</button>
             </div>
 
             <button onclick="saveSigWeather()" class="btn-primary" style="width:100%">Save & Publish Outlook</button>
-
-            <div class="card" style="margin-top:20px;">
-                <h2>Archive</h2>
-                <div id="sw-archive-container"></div>
-                <button onclick="clearSigArchive()" class="btn-danger" style="width:100%; margin-top:10px;">Clear Archive</button>
-            </div>
         </div>
 
         <!-- DROUGHTCAST TAB -->
@@ -261,18 +267,50 @@
             <button class="btn-primary" onclick="saveDrought()">Publish DroughtCast</button>
         </div>
 
-        <!-- ARCHIVE TAB (General) -->
+        <!-- UNIFIED ARCHIVE TAB -->
         <div id="tab-archive" class="tab-pane">
             <h1>System Archives</h1>
-            <div class="card">
-                <label>Select Archive Source</label>
-                <select id="arch-sel" onchange="loadArch()" style="margin-bottom:15px;"><option value="alerts">Alerts</option><option value="storm">StormCast</option><option value="snow">SnowCast</option><option value="sig">Sig Weather</option></select>
-                <div id="arch-view">Select source...</div>
+            <div class="card" style="padding:0; overflow:hidden;">
+                <div class="archive-wrapper">
+                    <div class="archive-tree" id="archive-tree-root">
+                        <!-- Generated Folder Tree goes here -->
+                        <p style="padding:20px; color:#9ca3af;">Loading archives...</p>
+                    </div>
+                    <div class="archive-viewer" id="archive-viewer-root">
+                        <div style="margin:auto; text-align:center; color:#9ca3af;">
+                            <svg style="width:48px; height:48px; margin-bottom:10px; opacity:0.5;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"></path></svg>
+                            <p>Select a date to view archived forecasts.</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding:15px; background:#f3f4f6; border-top:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center;">
+                    <small style="color:#6b7280;">Archives are compiled from all system modules.</small>
+                    <button class="btn-secondary btn-sm" onclick="loadGlobalArchives()">Refresh Archives</button>
+                </div>
             </div>
         </div>
 
     </div>
 </div>
+
+<!-- ARCHIVE MODAL -->
+<div class="arch-modal-overlay" id="am-overlay">
+    <div class="arch-modal">
+        <div class="am-head">
+            <h3 id="am-title" style="margin:0;">Forecast Detail</h3>
+            <button onclick="document.getElementById('am-overlay').style.display='none'" style="background:transparent; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+        <div class="am-body">
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <span id="am-tag" class="badge" style="background:#2563eb; color:white; padding:4px 10px; border-radius:4px;">TYPE</span>
+                <span id="am-date" style="color:#6b7280; font-weight:600;">Date</span>
+            </div>
+            <div id="am-text" class="am-text"></div>
+            <img id="am-img" class="am-img" style="display:none;">
+        </div>
+    </div>
+</div>
+
 <div id="toast">Saved!</div>
 
 <script>
@@ -286,12 +324,17 @@ const getFresh = (u) => u + '?t=' + Date.now();
 // STATE
 let data = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
 let archives = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
-// Specifically for Sig Weather specific variables
 let sigActiveForecasts = [];
 let sigArchiveData = [];
 
 function toast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display='block'; setTimeout(()=>t.style.display='none', 3000); }
-function setTab(id) { document.querySelectorAll('.tab-pane').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); }
+function setTab(id) { 
+    document.querySelectorAll('.tab-pane').forEach(e=>e.classList.remove('active')); 
+    document.getElementById('tab-'+id).classList.add('active'); 
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); 
+    event.target.classList.add('active');
+    if(id === 'archive') loadGlobalArchives();
+}
 async function upImg(el) { if(!el.files[0]) return null; const fd = new FormData(); fd.append('image', el.files[0]); const r = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:'POST', body:fd}); const j = await r.json(); return j.data.url; }
 
 // --- LOADERS ---
@@ -458,7 +501,7 @@ async function loadSig() {
         const container = document.getElementById('swo-entries-container');
         container.innerHTML = '';
         sigActiveForecasts.forEach(f => createSigEntryElement(f));
-        renderSigArchive();
+        // Note: Removed archive rendering here as per user request
 
         if (dataModified) saveSigWeather(true); // Silent save if archived
 
@@ -548,53 +591,6 @@ async function saveSigWeather(isSilent = false) {
     if(!isSilent) { toast('Published!'); loadSig(); }
 }
 
-function renderSigArchive() {
-    const container = document.getElementById('sw-archive-container');
-    container.innerHTML = '';
-    if(sigArchiveData.length === 0) { container.innerHTML = '<p style="color:#6b7280; font-style:italic;">No archives available.</p>'; return; }
-    
-    // Group by Month
-    const grouped = {};
-    sigArchiveData.forEach(f => {
-        const d = new Date(f.date);
-        const k = d.toLocaleString('en-NZ', { month: 'long', year: 'numeric' });
-        if(!grouped[k]) grouped[k] = [];
-        grouped[k].push(f);
-    });
-    
-    Object.keys(grouped).forEach(month => {
-        const det = document.createElement('details');
-        det.innerHTML = `<summary>${month}</summary>`;
-        
-        const grid = document.createElement('div');
-        grid.className = 'archive-grid';
-        
-        grouped[month].forEach(f => {
-            const imgHTML = f.imageUrl ? `<div class="archive-map-container"><img src="${f.imageUrl}" loading="lazy" alt="Map"></div>` : '';
-            grid.innerHTML += `
-                <div class="archive-item">
-                    <div class="archive-header">
-                        <strong>${f.date}</strong>
-                        <span class="badge ${f.alertLevel ? f.alertLevel.toLowerCase() : 'none'}">${f.alertLevel || 'None'}</span>
-                    </div>
-                    <div class="archive-body">${f.summary}</div>
-                    ${imgHTML}
-                </div>
-            `;
-        });
-        
-        det.appendChild(grid);
-        container.appendChild(det);
-    });
-}
-
-async function clearSigArchive() {
-    if(confirm("Delete entire Sig Weather archive?")) {
-        sigArchiveData = [];
-        saveSigWeather();
-    }
-}
-
 // --- DROUGHT LOGIC ---
 function addDroughtAlert() {
     data.drought.push({
@@ -615,14 +611,177 @@ async function saveDrought() {
     toast('Published!');
 }
 
-// --- ARCHIVE ---
-async function loadArch() {
-    const k = document.getElementById('arch-sel').value;
-    const c = document.getElementById('arch-view'); c.innerHTML = '<p style="color:#6b7280;">Fetching...</p>';
-    fetch(api(k)+'/latest?t='+Date.now(), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).then(d=>{
-        const arch = d.record.archive || [];
-        c.innerHTML = arch.length ? arch.map(i=>`<div class="item-list-row" style="background:white;">${i.title||i.weatherType||i.date||'Item'}</div>`).join('') : '<p style="color:#6b7280;">No archives found.</p>';
+// --- UNIFIED ARCHIVE LOGIC ---
+let allArchives = []; // Normalized data store
+
+function loadGlobalArchives() {
+    // We use the 'archives' global object which contains historical data,
+    // plus 'sigArchiveData', plus current active data (to give a full picture of that day).
+    
+    allArchives = [];
+
+    // 1. Process Alerts
+    [...data.alerts, ...archives.alerts].forEach(i => {
+        if(i.startTime) allArchives.push({
+            date: i.startTime.split('T')[0],
+            type: 'Alert',
+            tag: 'tag-alert',
+            title: i.weatherType,
+            sub: i.type + ' - ' + i.regions,
+            text: i.summary,
+            fullData: i
+        });
     });
+
+    // 2. Process StormCast
+    [...data.storm, ...archives.storm].forEach(i => {
+        if(i.validFrom) allArchives.push({
+            date: i.validFrom.split('T')[0],
+            type: 'StormCast',
+            tag: 'tag-storm',
+            title: i.title,
+            sub: 'Outlook',
+            text: i.overallDiscussion,
+            img: i.mapUrl,
+            fullData: i
+        });
+    });
+
+    // 3. Process SnowCast
+    [...data.snow, ...archives.snow].forEach(i => {
+        if(i.validFrom) allArchives.push({
+            date: i.validFrom.split('T')[0],
+            type: 'SnowCast',
+            tag: 'tag-snow',
+            title: i.region + ' (' + i.riskLevel + ')',
+            sub: 'Snow Risk',
+            text: i.summary,
+            fullData: i
+        });
+    });
+
+    // 4. Process Sig Weather
+    // (Combine active + archive)
+    [...sigActiveForecasts, ...sigArchiveData].forEach(i => {
+        if(i.date) allArchives.push({
+            date: i.date,
+            type: 'Sig Weather',
+            tag: 'tag-sig',
+            title: i.date + ' Outlook',
+            sub: i.alertLevel || 'Forecast',
+            text: i.summary,
+            img: i.imageUrl,
+            fullData: i
+        });
+    });
+
+    // 5. Group by Year -> Month -> Day
+    const tree = {};
+    allArchives.forEach(item => {
+        const [y, m, d] = item.date.split('-');
+        const monthName = new Date(y, m-1).toLocaleString('default', { month: 'long' });
+        
+        if (!tree[y]) tree[y] = {};
+        if (!tree[y][monthName]) tree[y][monthName] = {};
+        if (!tree[y][monthName][d]) tree[y][monthName][d] = [];
+        
+        tree[y][monthName][d].push(item);
+    });
+
+    renderArchiveTree(tree);
+}
+
+function renderArchiveTree(tree) {
+    const root = document.getElementById('archive-tree-root');
+    root.innerHTML = '';
+    
+    // Sort Years Descending
+    Object.keys(tree).sort().reverse().forEach(year => {
+        const yDiv = document.createElement('div');
+        yDiv.className = 'tree-year';
+        yDiv.innerText = year;
+        yDiv.onclick = (e) => { 
+            e.target.classList.toggle('open');
+            // If toggle closed, maybe hide children logic handled by CSS
+        };
+        root.appendChild(yDiv);
+
+        const mCont = document.createElement('div');
+        mCont.className = 'month-container';
+        
+        // Sort Months (Logic needed for alpha sort, or utilize index if kept)
+        // Simple sort keys descending for now (Dec before Jan if strings, need map)
+        const months = Object.keys(tree[year]); // You might want to sort these properly
+        
+        months.forEach(month => {
+            const mDiv = document.createElement('div');
+            mDiv.className = 'tree-year tree-month'; // Reuse class for style
+            mDiv.innerText = month;
+            mDiv.onclick = (e) => e.target.classList.toggle('open');
+            mCont.appendChild(mDiv);
+
+            const dCont = document.createElement('div');
+            dCont.className = 'month-container'; // Reuse logic
+
+            // Sort Days Descending
+            Object.keys(tree[year][month]).sort().reverse().forEach(day => {
+                const dDiv = document.createElement('div');
+                dDiv.className = 'day-item';
+                dDiv.innerText = `${day} ${month}`; // e.g. "25 November"
+                dDiv.onclick = () => {
+                    // Highlight
+                    document.querySelectorAll('.day-item').forEach(x=>x.classList.remove('selected'));
+                    dDiv.classList.add('selected');
+                    renderDayView(tree[year][month][day]);
+                };
+                dCont.appendChild(dDiv);
+            });
+            mCont.appendChild(dCont);
+        });
+        root.appendChild(mCont);
+    });
+}
+
+function renderDayView(items) {
+    const view = document.getElementById('archive-viewer-root');
+    view.innerHTML = '';
+    
+    if(!items || items.length === 0) return;
+
+    const head = document.createElement('h3');
+    head.style.borderBottom = "1px solid #e5e7eb";
+    head.style.paddingBottom = "10px";
+    head.innerText = `Archives for ${items[0].date}`;
+    view.appendChild(head);
+
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'arch-entry';
+        div.innerHTML = `
+            <span class="arch-tag ${item.tag}">${item.type}</span>
+            <div style="font-weight:700; font-size:1.05rem; margin-bottom:4px;">${item.title}</div>
+            <div style="color:#6b7280; font-size:0.9rem;">${item.sub}</div>
+        `;
+        div.onclick = () => openArchModal(item);
+        view.appendChild(div);
+    });
+}
+
+function openArchModal(item) {
+    document.getElementById('am-title').innerText = item.title;
+    document.getElementById('am-tag').innerText = item.type;
+    document.getElementById('am-date').innerText = item.date;
+    document.getElementById('am-text').innerText = item.text || "(No details provided)";
+    
+    const img = document.getElementById('am-img');
+    if(item.img) {
+        img.src = item.img;
+        img.style.display = 'block';
+    } else {
+        img.style.display = 'none';
+    }
+    
+    document.getElementById('am-overlay').style.display = 'flex';
 }
 
 init();
