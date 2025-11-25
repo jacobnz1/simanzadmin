@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMA Admin V34 (Unified Archive)</title>
+    <title>SIMA Admin V36 (Advanced Archive)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -60,7 +60,7 @@
         .btn-danger { background: var(--danger); }
         .btn-danger:hover { background: #dc2626; }
         .btn-secondary { background: white; border: 1px solid #d1d5db; color: #374151; }
-        .btn-secondary:hover { background: #f9fafb; border-color: #9ca3af; }
+        .btn-secondary:hover { background: #f9fafb; border-color: #9ca3af; color: #111827; }
         .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
 
         /* UTILS */
@@ -86,38 +86,81 @@
         .remove-day-btn { background: transparent; color: #9ca3af; border: none; font-size: 1.5rem; cursor: pointer; padding: 4px; line-height: 1; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
         .remove-day-btn:hover { background: #fee2e2; color: #ef4444; }
 
-        /* --- NEW ARCHIVE SYSTEM Styles --- */
-        .archive-wrapper { display: flex; gap: 20px; height: 700px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: white; }
+        /* --- ADVANCED ARCHIVE SYSTEM --- */
+        /* Toolbar */
+        .archive-toolbar {
+            display: grid; 
+            grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; 
+            gap: 10px; 
+            padding: 15px; 
+            background: #f8fafc; 
+            border-bottom: 1px solid var(--border);
+            align-items: end;
+        }
+        .archive-toolbar label { font-size: 0.75rem; margin-bottom: 4px; color: #6b7280; }
+        .archive-toolbar select, .archive-toolbar input { padding: 8px; font-size: 0.85rem; }
+        .archive-toolbar button { padding: 8px; font-size: 0.85rem; }
+
+        .archive-wrapper { display: flex; gap: 20px; height: 650px; border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; background: white; }
         .archive-tree { width: 30%; border-right: 1px solid var(--border); overflow-y: auto; padding: 15px; background: #f9fafb; }
         .archive-viewer { width: 70%; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         
         /* Tree Structure */
-        .tree-year { font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: #374151; }
+        .tree-year { font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: #374151; padding: 5px; border-radius: 4px; }
+        .tree-year:hover { background: #e5e7eb; }
         .tree-year::before { content: '📂'; font-size: 0.9rem; }
-        .tree-month { margin-left: 20px; font-weight: 600; margin-bottom: 3px; cursor: pointer; color: #4b5563; display: none; } /* Hidden by default */
+        
+        .month-container { display: none; margin-left: 15px; border-left: 2px solid #e5e7eb; padding-left: 10px; }
         .tree-year.open + .month-container { display: block; }
         
-        .month-container { display: none; }
-        .day-item { margin-left: 40px; padding: 4px 8px; cursor: pointer; color: #6b7280; border-radius: 4px; font-size: 0.9rem; border-left: 2px solid transparent; }
-        .day-item:hover { background: #e5e7eb; color: var(--primary); }
-        .day-item.selected { background: #e0e7ff; color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
+        .tree-month { font-weight: 600; margin-bottom: 3px; cursor: pointer; color: #4b5563; padding: 4px; border-radius: 4px; display: flex; align-items: center; gap: 5px; }
+        .tree-month:hover { background: #e5e7eb; color: var(--primary); }
+        .tree-month::before { content: '📁'; font-size: 0.8rem; }
+        
+        .day-container { display: none; margin-left: 15px; border-left: 2px solid #e5e7eb; padding-left: 10px; margin-bottom: 10px; }
+        .tree-month.open + .day-container { display: block; }
+
+        .day-item { padding: 6px 10px; cursor: pointer; color: #6b7280; border-radius: 4px; font-size: 0.85rem; margin-bottom: 2px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .day-item::before { content: '📄'; font-size: 0.8rem; opacity: 0.6; }
+        .day-item:hover { background: #e5e7eb; color: var(--text-main); }
+        .day-item.selected { background: #eff6ff; color: var(--primary); font-weight: 600; border-left: 3px solid var(--primary); }
 
         /* Archive Items in Viewer */
-        .arch-entry { border: 1px solid var(--border); border-radius: 8px; padding: 15px; background: white; transition: transform 0.1s; cursor: pointer; }
-        .arch-entry:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .arch-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
-        .tag-alert { background: #fee2e2; color: #b91c1c; }
-        .tag-storm { background: #dcfce7; color: #15803d; }
-        .tag-snow { background: #e0f2fe; color: #0369a1; }
-        .tag-sig { background: #fef3c7; color: #b45309; }
+        .arch-entry { border: 1px solid var(--border); border-radius: 8px; padding: 20px; background: white; transition: all 0.2s; cursor: pointer; display: flex; gap: 15px; align-items: start; }
+        .arch-entry:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .arch-thumb { width: 80px; height: 80px; border-radius: 6px; object-fit: cover; background: #f3f4f6; border: 1px solid var(--border); flex-shrink: 0; }
+        .arch-content { flex-grow: 1; }
+        .arch-tag { display: inline-block; padding: 4px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+        
+        .tag-alert { background: #fee2e2; color: #991b1b; }
+        .tag-storm { background: #dcfce7; color: #166534; }
+        .tag-snow { background: #e0f2fe; color: #075985; }
+        .tag-sig { background: #fef3c7; color: #92400e; }
+        .tag-drought { background: #ffedd5; color: #9a3412; }
         
         /* Archive Modal */
-        .arch-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-        .arch-modal { background: white; width: 800px; max-width: 95%; max-height: 90vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        .am-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f9fafb; }
-        .am-body { padding: 30px; overflow-y: auto; }
-        .am-img { width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; margin-top: 15px; background: #000; }
-        .am-text { white-space: pre-line; line-height: 1.6; color: #374151; font-size: 1rem; }
+        .arch-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.3s; }
+        .arch-modal-overlay.visible { opacity: 1; }
+        .arch-modal { background: white; width: 800px; max-width: 95%; max-height: 90vh; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: scale(0.95); transition: transform 0.3s; }
+        .arch-modal-overlay.visible .arch-modal { transform: scale(1); }
+        
+        .am-head { padding: 20px 30px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f9fafb; }
+        .am-head h3 { font-size: 1.2rem; font-weight: 700; }
+        .am-close-btn { background: #f3f4f6; width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: #4b5563; transition: 0.2s; }
+        .am-close-btn:hover { background: #fee2e2; color: #ef4444; }
+
+        .am-body { padding: 40px; overflow-y: auto; flex-grow: 1; }
+        .am-img { width: 100%; max-height: 500px; object-fit: contain; border-radius: 8px; margin-top: 25px; background: #f3f4f6; border: 1px solid var(--border); }
+        .am-text { white-space: pre-line; line-height: 1.7; color: #374151; font-size: 1.05rem; }
+        
+        .am-footer { padding: 20px; border-top: 1px solid var(--border); background: #f9fafb; text-align: right; }
+
+        @media (max-width: 900px) {
+            .archive-toolbar { grid-template-columns: 1fr 1fr; }
+            .archive-wrapper { flex-direction: column; height: auto; }
+            .archive-tree { width: 100%; height: 200px; border-right: none; border-bottom: 1px solid var(--border); }
+            .archive-viewer { width: 100%; }
+        }
 
     </style>
 </head>
@@ -271,20 +314,53 @@
         <div id="tab-archive" class="tab-pane">
             <h1>System Archives</h1>
             <div class="card" style="padding:0; overflow:hidden;">
+                
+                <!-- ARCHIVE TOOLBAR -->
+                <div class="archive-toolbar">
+                    <div>
+                        <label>Filter by Type</label>
+                        <select id="arch-filter-type" onchange="applyArchFilters()">
+                            <option value="All">All Archives</option>
+                            <option value="Alert">Alerts</option>
+                            <option value="StormCast">StormCast</option>
+                            <option value="SnowCast">SnowCast</option>
+                            <option value="Sig Weather">Sig Weather</option>
+                            <option value="DroughtCast">DroughtCast</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Start Date</label>
+                        <input type="date" id="arch-filter-start" onchange="applyArchFilters()">
+                    </div>
+                    <div>
+                        <label>End Date</label>
+                        <input type="date" id="arch-filter-end" onchange="applyArchFilters()">
+                    </div>
+                    <div>
+                        <label>Sort Order</label>
+                        <select id="arch-filter-sort" onchange="applyArchFilters()">
+                            <option value="desc">Newest First</option>
+                            <option value="asc">Oldest First</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:end;">
+                        <button class="btn-success" onclick="downloadArchive()" style="width:100%; font-size:0.8rem;">Download Data</button>
+                    </div>
+                </div>
+
                 <div class="archive-wrapper">
                     <div class="archive-tree" id="archive-tree-root">
-                        <!-- Generated Folder Tree goes here -->
                         <p style="padding:20px; color:#9ca3af;">Loading archives...</p>
                     </div>
                     <div class="archive-viewer" id="archive-viewer-root">
                         <div style="margin:auto; text-align:center; color:#9ca3af;">
                             <svg style="width:48px; height:48px; margin-bottom:10px; opacity:0.5;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"></path></svg>
-                            <p>Select a date to view archived forecasts.</p>
+                            <p>Select a date folder to view archived forecasts.</p>
                         </div>
                     </div>
                 </div>
                 <div style="padding:15px; background:#f3f4f6; border-top:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center;">
-                    <small style="color:#6b7280;">Archives are compiled from all system modules.</small>
+                    <small style="color:#6b7280;">Archives include data from all modules.</small>
                     <button class="btn-secondary btn-sm" onclick="loadGlobalArchives()">Refresh Archives</button>
                 </div>
             </div>
@@ -298,15 +374,18 @@
     <div class="arch-modal">
         <div class="am-head">
             <h3 id="am-title" style="margin:0;">Forecast Detail</h3>
-            <button onclick="document.getElementById('am-overlay').style.display='none'" style="background:transparent; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            <button onclick="closeArchModal()" class="am-close-btn">&times;</button>
         </div>
         <div class="am-body">
             <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <span id="am-tag" class="badge" style="background:#2563eb; color:white; padding:4px 10px; border-radius:4px;">TYPE</span>
-                <span id="am-date" style="color:#6b7280; font-weight:600;">Date</span>
+                <span id="am-tag" class="arch-tag">TYPE</span>
+                <span id="am-date" style="color:#6b7280; font-weight:600; font-size:0.9rem;">Date</span>
             </div>
             <div id="am-text" class="am-text"></div>
             <img id="am-img" class="am-img" style="display:none;">
+        </div>
+        <div class="am-footer">
+            <button onclick="closeArchModal()" class="btn-secondary">Close Window</button>
         </div>
     </div>
 </div>
@@ -478,8 +557,7 @@ async function loadSig() {
         sigArchiveData = d.archive || [];
         const allForecasts = d.forecasts || [];
         
-        // Date Filtering (Archive old stuff)
-        const todayNZ = new Date().toISOString().split('T')[0]; // Simple ISO Date YYYY-MM-DD
+        const todayNZ = new Date().toISOString().split('T')[0];
         
         sigActiveForecasts = [];
         let dataModified = false;
@@ -488,22 +566,18 @@ async function loadSig() {
             if (f.date && f.date >= todayNZ) {
                 sigActiveForecasts.push(f);
             } else if (f.date) {
-                // Move to archive
                 sigArchiveData.push(f);
                 dataModified = true;
             }
         });
 
-        // Sort
         sigActiveForecasts.sort((a, b) => new Date(a.date) - new Date(b.date));
         
-        // Render
         const container = document.getElementById('swo-entries-container');
         container.innerHTML = '';
         sigActiveForecasts.forEach(f => createSigEntryElement(f));
-        // Note: Removed archive rendering here as per user request
-
-        if (dataModified) saveSigWeather(true); // Silent save if archived
+        
+        if (dataModified) saveSigWeather(true);
 
     } catch(e) { console.error("Sig load error", e); }
 }
@@ -540,7 +614,6 @@ function createSigEntryElement(entryData = {}) {
     `;
     container.appendChild(div);
 
-    // Events
     div.querySelector('.remove-day-btn').addEventListener('click', () => div.remove());
     div.querySelector('.forecast-image-upload').addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -556,16 +629,13 @@ function createSigEntry() { createSigEntryElement(); }
 async function saveSigWeather(isSilent = false) {
     if(!isSilent) toast('Saving...');
     
-    // 1. Process Inputs & Upload Images
     const entries = document.querySelectorAll('.daily-forecast-card');
     const promises = Array.from(entries).map(async (entry) => {
         const fileInput = entry.querySelector('.forecast-image-upload');
         let url = entry.querySelector('.forecast-image-url').value;
-        
         if (fileInput.files[0]) {
             try { url = await upImg(fileInput); } catch(e){ console.log("Img fail", e); }
         }
-        
         return {
             id: entry.getAttribute('data-id'),
             date: entry.querySelector('.forecast-date').value,
@@ -577,7 +647,6 @@ async function saveSigWeather(isSilent = false) {
     
     const newForecasts = (await Promise.all(promises)).filter(f => f.date);
     
-    // 2. Save to Bin
     await fetch(api('sig'), {
         method:'PUT', headers, 
         body:JSON.stringify({
@@ -611,128 +680,128 @@ async function saveDrought() {
     toast('Published!');
 }
 
-// --- UNIFIED ARCHIVE LOGIC ---
-let allArchives = []; // Normalized data store
+// --- ADVANCED UNIFIED ARCHIVE SYSTEM ---
+let allArchives = [];
+let filteredArchives = [];
 
 function loadGlobalArchives() {
-    // We use the 'archives' global object which contains historical data,
-    // plus 'sigArchiveData', plus current active data (to give a full picture of that day).
-    
-    allArchives = [];
+    allArchives = []; 
 
-    // 1. Process Alerts
-    [...data.alerts, ...archives.alerts].forEach(i => {
-        if(i.startTime) allArchives.push({
-            date: i.startTime.split('T')[0],
-            type: 'Alert',
-            tag: 'tag-alert',
-            title: i.weatherType,
-            sub: i.type + ' - ' + i.regions,
-            text: i.summary,
-            fullData: i
-        });
+    // 1. Alerts
+    [...(data.alerts||[]), ...(archives.alerts||[])].forEach(i => {
+        if(!i.startTime) return;
+        allArchives.push({ date: i.startTime.split('T')[0], type: 'Alert', tag: 'tag-alert', title: i.weatherType, sub: (i.type || 'Warning') + ' - ' + (i.regions || 'General'), text: i.summary, fullData: i });
     });
 
-    // 2. Process StormCast
-    [...data.storm, ...archives.storm].forEach(i => {
-        if(i.validFrom) allArchives.push({
-            date: i.validFrom.split('T')[0],
-            type: 'StormCast',
-            tag: 'tag-storm',
-            title: i.title,
-            sub: 'Outlook',
-            text: i.overallDiscussion,
-            img: i.mapUrl,
-            fullData: i
-        });
+    // 2. StormCast
+    [...(data.storm||[]), ...(archives.storm||[])].forEach(i => {
+        if(!i.validFrom) return;
+        allArchives.push({ date: i.validFrom.split('T')[0], type: 'StormCast', tag: 'tag-storm', title: i.title || 'Thunderstorm Risk', sub: 'Convective Outlook', text: i.overallDiscussion, img: i.mapUrl, fullData: i });
     });
 
-    // 3. Process SnowCast
-    [...data.snow, ...archives.snow].forEach(i => {
-        if(i.validFrom) allArchives.push({
-            date: i.validFrom.split('T')[0],
-            type: 'SnowCast',
-            tag: 'tag-snow',
-            title: i.region + ' (' + i.riskLevel + ')',
-            sub: 'Snow Risk',
-            text: i.summary,
-            fullData: i
-        });
+    // 3. SnowCast
+    [...(data.snow||[]), ...(archives.snow||[])].forEach(i => {
+        if(!i.validFrom) return;
+        allArchives.push({ date: i.validFrom.split('T')[0], type: 'SnowCast', tag: 'tag-snow', title: i.region + ' (' + (i.riskLevel || 'Risk') + ')', sub: 'Snow Warning', text: i.summary, fullData: i });
     });
 
-    // 4. Process Sig Weather
-    // (Combine active + archive)
+    // 4. Sig Weather
     [...sigActiveForecasts, ...sigArchiveData].forEach(i => {
-        if(i.date) allArchives.push({
-            date: i.date,
-            type: 'Sig Weather',
-            tag: 'tag-sig',
-            title: i.date + ' Outlook',
-            sub: i.alertLevel || 'Forecast',
-            text: i.summary,
-            img: i.imageUrl,
-            fullData: i
-        });
+        if(!i.date) return;
+        allArchives.push({ date: i.date, type: 'Sig Weather', tag: 'tag-sig', title: 'Outlook: ' + (i.alertLevel || 'General'), sub: 'Significant Weather', text: i.summary, img: i.imageUrl, fullData: i });
     });
 
-    // 5. Group by Year -> Month -> Day
+    // 5. DroughtCast (Current only as source)
+    [...(data.drought||[])].forEach(i => {
+        if(!i.endDate) return;
+        allArchives.push({ date: i.endDate, type: 'DroughtCast', tag: 'tag-drought', title: i.region, sub: i.severity + ' Risk', text: i.summary, fullData: i });
+    });
+
+    applyArchFilters();
+}
+
+function applyArchFilters() {
+    const type = document.getElementById('arch-filter-type').value;
+    const start = document.getElementById('arch-filter-start').value;
+    const end = document.getElementById('arch-filter-end').value;
+    const sort = document.getElementById('arch-filter-sort').value; // 'desc' or 'asc'
+
+    // Filter
+    filteredArchives = allArchives.filter(item => {
+        // Type Check
+        if(type !== 'All' && item.type !== type) return false;
+        
+        // Date Range Check
+        const itemDate = new Date(item.date);
+        if(start && itemDate < new Date(start)) return false;
+        if(end && itemDate > new Date(end)) return false;
+        
+        return true;
+    });
+
+    // Build Tree from Filtered Data
     const tree = {};
-    allArchives.forEach(item => {
+    filteredArchives.forEach(item => {
         const [y, m, d] = item.date.split('-');
+        if(!y || !m || !d) return;
         const monthName = new Date(y, m-1).toLocaleString('default', { month: 'long' });
         
         if (!tree[y]) tree[y] = {};
         if (!tree[y][monthName]) tree[y][monthName] = {};
         if (!tree[y][monthName][d]) tree[y][monthName][d] = [];
-        
         tree[y][monthName][d].push(item);
     });
 
-    renderArchiveTree(tree);
+    renderArchiveTree(tree, sort);
 }
 
-function renderArchiveTree(tree) {
+function renderArchiveTree(tree, sortDir) {
     const root = document.getElementById('archive-tree-root');
     root.innerHTML = '';
     
-    // Sort Years Descending
-    Object.keys(tree).sort().reverse().forEach(year => {
+    if(Object.keys(tree).length === 0) {
+        root.innerHTML = '<p style="padding:20px; color:#9ca3af;">No archives found matching filters.</p>';
+        return;
+    }
+
+    const years = Object.keys(tree).sort();
+    if(sortDir === 'desc') years.reverse();
+
+    years.forEach(year => {
         const yDiv = document.createElement('div');
         yDiv.className = 'tree-year';
         yDiv.innerText = year;
-        yDiv.onclick = (e) => { 
-            e.target.classList.toggle('open');
-            // If toggle closed, maybe hide children logic handled by CSS
-        };
+        yDiv.onclick = (e) => e.target.classList.toggle('open');
         root.appendChild(yDiv);
 
         const mCont = document.createElement('div');
         mCont.className = 'month-container';
         
-        // Sort Months (Logic needed for alpha sort, or utilize index if kept)
-        // Simple sort keys descending for now (Dec before Jan if strings, need map)
-        const months = Object.keys(tree[year]); // You might want to sort these properly
-        
+        const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let months = Object.keys(tree[year]).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+        if(sortDir === 'desc') months.reverse();
+
         months.forEach(month => {
             const mDiv = document.createElement('div');
-            mDiv.className = 'tree-year tree-month'; // Reuse class for style
+            mDiv.className = 'tree-month';
             mDiv.innerText = month;
             mDiv.onclick = (e) => e.target.classList.toggle('open');
             mCont.appendChild(mDiv);
 
             const dCont = document.createElement('div');
-            dCont.className = 'month-container'; // Reuse logic
+            dCont.className = 'day-container';
 
-            // Sort Days Descending
-            Object.keys(tree[year][month]).sort().reverse().forEach(day => {
+            let days = Object.keys(tree[year][month]).sort();
+            if(sortDir === 'desc') days.reverse();
+
+            days.forEach(day => {
                 const dDiv = document.createElement('div');
                 dDiv.className = 'day-item';
-                dDiv.innerText = `${day} ${month}`; // e.g. "25 November"
+                dDiv.innerText = `${day} ${month}`;
                 dDiv.onclick = () => {
-                    // Highlight
                     document.querySelectorAll('.day-item').forEach(x=>x.classList.remove('selected'));
                     dDiv.classList.add('selected');
-                    renderDayView(tree[year][month][day]);
+                    renderDayView(tree[year][month][day], `${day} ${month} ${year}`);
                 };
                 dCont.appendChild(dDiv);
             });
@@ -742,25 +811,30 @@ function renderArchiveTree(tree) {
     });
 }
 
-function renderDayView(items) {
+function renderDayView(items, dateLabel) {
     const view = document.getElementById('archive-viewer-root');
     view.innerHTML = '';
     
-    if(!items || items.length === 0) return;
-
     const head = document.createElement('h3');
     head.style.borderBottom = "1px solid #e5e7eb";
     head.style.paddingBottom = "10px";
-    head.innerText = `Archives for ${items[0].date}`;
+    head.style.marginBottom = "20px";
+    head.style.color = "#374151";
+    head.innerText = `Archives for ${dateLabel}`;
     view.appendChild(head);
 
     items.forEach(item => {
         const div = document.createElement('div');
         div.className = 'arch-entry';
+        const imgHTML = item.img ? `<img src="${item.img}" class="arch-thumb">` : `<div class="arch-thumb" style="display:flex;align-items:center;justify-content:center;font-size:20px;">☁️</div>`;
+        
         div.innerHTML = `
-            <span class="arch-tag ${item.tag}">${item.type}</span>
-            <div style="font-weight:700; font-size:1.05rem; margin-bottom:4px;">${item.title}</div>
-            <div style="color:#6b7280; font-size:0.9rem;">${item.sub}</div>
+            ${imgHTML}
+            <div class="arch-content">
+                <span class="arch-tag ${item.tag}">${item.type}</span>
+                <div style="font-weight:700; font-size:1.05rem; margin-bottom:4px; color:#111827;">${item.title}</div>
+                <div style="color:#6b7280; font-size:0.9rem;">${item.sub}</div>
+            </div>
         `;
         div.onclick = () => openArchModal(item);
         view.appendChild(div);
@@ -769,9 +843,12 @@ function renderDayView(items) {
 
 function openArchModal(item) {
     document.getElementById('am-title').innerText = item.title;
-    document.getElementById('am-tag').innerText = item.type;
+    const tag = document.getElementById('am-tag');
+    tag.innerText = item.type;
+    tag.className = `arch-tag ${item.tag}`;
+    
     document.getElementById('am-date').innerText = item.date;
-    document.getElementById('am-text').innerText = item.text || "(No details provided)";
+    document.getElementById('am-text').innerText = item.text || "(No text description available)";
     
     const img = document.getElementById('am-img');
     if(item.img) {
@@ -781,8 +858,35 @@ function openArchModal(item) {
         img.style.display = 'none';
     }
     
-    document.getElementById('am-overlay').style.display = 'flex';
+    const overlay = document.getElementById('am-overlay');
+    overlay.style.display = 'flex';
+    setTimeout(() => overlay.classList.add('visible'), 10);
 }
+
+function closeArchModal() {
+    const overlay = document.getElementById('am-overlay');
+    overlay.classList.remove('visible');
+    setTimeout(() => overlay.style.display = 'none', 300);
+}
+
+// EXPORT FUNCTION
+function downloadArchive() {
+    if(filteredArchives.length === 0) { alert("No data to export based on current filters."); return; }
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredArchives, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    const dateName = new Date().toISOString().split('T')[0];
+    downloadAnchorNode.setAttribute("download", "sima_archive_export_" + dateName + ".json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+// CLICK OUTSIDE TO CLOSE
+document.getElementById('am-overlay').addEventListener('click', (e) => {
+    if(e.target === e.currentTarget) closeArchModal();
+});
 
 init();
 </script>
