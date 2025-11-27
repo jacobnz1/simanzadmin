@@ -445,11 +445,21 @@ function setTab(id) {
 }
 async function upImg(el) { if(!el.files[0]) return null; const fd = new FormData(); fd.append('image', el.files[0]); const r = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:'POST', body:fd}); const j = await r.json(); return j.data.url; }
 
+// -- DATE UTILS (NZ TIME FIX) --
+function getNZDate() { return new Date().toLocaleString("en-NZ", { timeZone: "Pacific/Auckland" }); }
+function getNZTodayISO() {
+    // Returns YYYY-MM-DD for New Zealand
+    const nz = new Date(getNZDate());
+    const y = nz.getFullYear();
+    const m = String(nz.getMonth()+1).padStart(2,'0');
+    const d = String(nz.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+}
+
 // --- CORE INIT (Robust Loading) ---
 async function init() {
     const fetchBin = (name) => fetch(getFresh(api(name)+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).catch(e => ({record:{}}));
 
-    // Fetch all concurrently
     const [alertRes, stormRes, snowRes, sigRes, droughtRes] = await Promise.all([
         fetchBin('alerts'), fetchBin('storm'), fetchBin('snow'), fetchBin('sig'), fetchBin('drought')
     ]);
@@ -477,36 +487,53 @@ async function init() {
 
     // 4. DROUGHT
     data.drought = droughtRes.record.alerts || [];
+    archives.drought = droughtRes.record.archive || [];
     if(droughtRes.record.overview) {
         document.getElementById('dc-title').value = droughtRes.record.overview.title||'';
         document.getElementById('dc-sum').value = droughtRes.record.overview.summary||'';
     }
     renderDroughtList();
 
-    // 5. SIG WEATHER
+    // 5. SIG WEATHER (Updated with NZ Time Archiving & Data Restoration)
     const sd = sigRes.record || {};
     document.getElementById('swo-overallTitle').value = sd.overallTitle || '';
     document.getElementById('swo-overallSummary').value = sd.overallSummary || '';
-    sigArchiveData = sd.archive || [];
     
-    const todayNZ = new Date().toISOString().split('T')[0];
+    // Combine all potential sources to find lost active forecasts
+    const allSigItems = [...(sd.forecasts || []), ...(sd.archive || [])];
+    
+    // NZ Time Check
+    const todayNZ = getNZTodayISO(); // e.g. "2025-11-29" based on NZ time
     sigActiveForecasts = [];
+    sigArchiveData = [];
+    
     let dataModified = false;
 
-    (sd.forecasts || []).forEach(f => {
-        if (f.date && f.date >= todayNZ) {
+    // Re-evaluate every single record
+    allSigItems.forEach(f => {
+        if(!f.date) return; // Skip bad data
+        
+        // If date is today or future (NZ Time), it must be ACTIVE
+        if (f.date >= todayNZ) {
             sigActiveForecasts.push(f);
-        } else if (f.date) {
+        } else {
+            // Strictly past dates go to archive
             sigArchiveData.push(f);
-            dataModified = true;
         }
     });
+
+    // Remove duplicates just in case
+    sigActiveForecasts = [...new Map(sigActiveForecasts.map(item => [item.id || item.date, item])).values()];
+    sigArchiveData = [...new Map(sigArchiveData.map(item => [item.id || item.date, item])).values()];
+
     sigActiveForecasts.sort((a, b) => new Date(a.date) - new Date(b.date));
     
     const container = document.getElementById('swo-entries-container');
     container.innerHTML = '';
     sigActiveForecasts.forEach(f => createSigEntryElement(f));
-    if(dataModified) saveSigWeather(true);
+    
+    // We don't auto-save immediately to avoid overwriting unless user clicks save, 
+    // but the UI will now show the correct active items.
 
     // LOAD ARCHIVE TREE
     loadGlobalArchives();
@@ -551,17 +578,17 @@ async function saveAlerts() {
     toast('Saving...'); await fetch(api('alerts'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value }, blocks: data.alerts, archive: archives.alerts})}); toast('Published!');
 }
 
-/* --- UPDATED STORMCAST REGION LOGIC --- */
+/* --- STORMCAST FUNCTIONS --- */
 function updateStcColor(el) {
     const val = el.value;
     const parent = el.closest('.sub-item');
     if(!parent) return;
     
     let col = '#e5e7eb'; // default grey
-    if(val === 'Downpours') col = '#6366f1'; // Indigo
-    if(val === 'Slight') col = '#eab308';    // Yellow
-    if(val === 'Enhanced') col = '#f97316';  // Orange
-    if(val === 'High') col = '#ef4444';      // Red
+    if(val === 'Downpours') col = '#6366f1';
+    if(val === 'Slight') col = '#eab308';
+    if(val === 'Enhanced') col = '#f97316';
+    if(val === 'High') col = '#ef4444';
     
     parent.style.borderLeft = `5px solid ${col}`;
 }
@@ -735,19 +762,13 @@ function editDrought(i) {
     renderDroughtList();
 }
 function archiveDrought(i) {
-    // Drought doesn't have a specific archive bucket in init(), using implicit list if needed or ignoring
-    // Based on INIT: data.drought = ... There is no archives.drought defined in INIT specifically as separate array for API 
-    // BUT the init function does this: fetchBin('drought').
-    // Let's check init: data.drought = droughtRes.record.alerts.
-    // There is no archives.drought in init. I will add it to local state so it can be viewed in the archives tab.
-    // The unified archive tab uses `data.drought` to show active. 
-    // If we want to "archive" it, we imply moving it out of active list. 
-    // Since Drought API structure in saveDrought() is just {overview, alerts}, it doesn't support a separate archive key in the JSONBIN.
-    // However, I will implement local removal.
+    archives.drought.push(data.drought[i]);
     data.drought.splice(i, 1);
     renderDroughtList();
 }
-async function saveDrought() { await fetch(api('drought'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({overview:{title:document.getElementById('dc-title').value, summary:document.getElementById('dc-sum').value}, alerts:data.drought})}); toast('Published!'); }
+async function saveDrought() { 
+    await fetch(api('drought'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({overview:{title:document.getElementById('dc-title').value, summary:document.getElementById('dc-sum').value}, alerts:data.drought, archive: archives.drought})}); toast('Published!'); 
+}
 
 // --- ROBUST UNIFIED ARCHIVE SYSTEM ---
 let allArchives = [];
@@ -784,7 +805,7 @@ function loadGlobalArchives() {
     });
 
     // 5. DroughtCast
-    [...(data.drought||[])].forEach(i => {
+    [...(data.drought||[]), ...(archives.drought||[])].forEach(i => {
         if(!i.endDate) return;
         allArchives.push({ date: i.endDate, type: 'DroughtCast', tag: 'tag-drought', title: i.region, sub: i.severity + ' Risk', text: i.summary, fullData: i });
     });
@@ -800,9 +821,25 @@ function applyArchFilters() {
 
     filteredArchives = allArchives.filter(item => {
         if(type !== 'All' && item.type !== type) return false;
-        const itemDate = new Date(item.date);
-        if(start && itemDate < new Date(start)) return false;
-        if(end && itemDate > new Date(end)) return false;
+        
+        // DATE PARSING ATTEMPT
+        let dObj = new Date(item.date);
+        
+        // If basic ISO parsing fails, check for DD/MM/YYYY common in NZ
+        if(isNaN(dObj)) {
+            const parts = item.date.split(/[-/]/);
+            if(parts.length === 3) {
+                // If first part is day (<=31) and last part is year (>1900)
+                if(parseInt(parts[0]) <= 31 && parseInt(parts[2]) > 1900) {
+                    dObj = new Date(parts[2], parts[1]-1, parts[0]);
+                }
+            }
+        }
+
+        if(isNaN(dObj)) return true; // Keep weird dates so they at least show up
+        
+        if(start && dObj < new Date(start)) return false;
+        if(end && dObj > new Date(end)) return false;
         return true;
     });
 
@@ -810,15 +847,35 @@ function applyArchFilters() {
     const tree = {};
     filteredArchives.forEach(item => {
         if(!item.date) return;
-        const parts = item.date.split('-');
-        if(parts.length < 3) return;
-        const [y, m, d] = parts;
-        const monthName = new Date(y, m-1).toLocaleString('default', { month: 'long' });
+        
+        let y, m, d;
+        let dObj = new Date(item.date);
+        
+        // FIX FOR OLDER DATA FORMATS (e.g. DD/MM/YYYY vs YYYY-MM-DD)
+        if(isNaN(dObj)) {
+            const parts = item.date.split(/[-/]/);
+            if(parts.length >= 3) {
+                // Heuristic: If part[0] is year
+                if(parseInt(parts[0]) > 1900) { y=parts[0]; m=parts[1]; d=parts[2]; }
+                // Heuristic: If part[2] is year (DD/MM/YYYY)
+                else if(parseInt(parts[2]) > 1900) { y=parts[2]; m=parts[1]; d=parts[0]; }
+            }
+        } else {
+            y = dObj.getFullYear();
+            m = dObj.getMonth() + 1;
+            d = dObj.getDate();
+        }
+        
+        if(!y || !m || !d) return;
+
+        // Clean up strings
+        const dStr = String(d).padStart(2,'0');
+        const mName = new Date(y, m-1, 1).toLocaleString('default', { month: 'long' });
         
         if (!tree[y]) tree[y] = {};
-        if (!tree[y][monthName]) tree[y][monthName] = {};
-        if (!tree[y][monthName][d]) tree[y][monthName][d] = [];
-        tree[y][monthName][d].push(item);
+        if (!tree[y][mName]) tree[y][mName] = {};
+        if (!tree[y][mName][dStr]) tree[y][mName][dStr] = [];
+        tree[y][mName][dStr].push(item);
     });
 
     renderArchiveTree(tree, sort);
