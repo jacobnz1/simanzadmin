@@ -499,30 +499,24 @@ async function init() {
     document.getElementById('swo-overallTitle').value = sd.overallTitle || '';
     document.getElementById('swo-overallSummary').value = sd.overallSummary || '';
     
-    // Combine all potential sources to find lost active forecasts
-    const allSigItems = [...(sd.forecasts || []), ...(sd.archive || [])];
-    
-    // NZ Time Check
-    const todayNZ = getNZTodayISO(); // e.g. "2025-11-29" based on NZ time
-    sigActiveForecasts = [];
+    // FIX: Trust 'forecasts' list from DB first so active days don't disappear
+    sigActiveForecasts = [...(sd.forecasts || [])];
     sigArchiveData = [];
     
-    let dataModified = false;
-
-    // Re-evaluate every single record
-    allSigItems.forEach(f => {
-        if(!f.date) return; // Skip bad data
-        
-        // If date is today or future (NZ Time), it must be ACTIVE
-        if (f.date >= todayNZ) {
+    const todayNZ = getNZTodayISO();
+    const rawArchive = [...(sd.archive || [])];
+    
+    // Check archive: Restore future/today items if they were accidentally archived
+    rawArchive.forEach(f => {
+        if(!f.date) return;
+        if(f.date >= todayNZ) {
             sigActiveForecasts.push(f);
         } else {
-            // Strictly past dates go to archive
             sigArchiveData.push(f);
         }
     });
 
-    // Remove duplicates just in case
+    // Remove duplicates
     sigActiveForecasts = [...new Map(sigActiveForecasts.map(item => [item.id || item.date, item])).values()];
     sigArchiveData = [...new Map(sigArchiveData.map(item => [item.id || item.date, item])).values()];
 
@@ -531,9 +525,6 @@ async function init() {
     const container = document.getElementById('swo-entries-container');
     container.innerHTML = '';
     sigActiveForecasts.forEach(f => createSigEntryElement(f));
-    
-    // We don't auto-save immediately to avoid overwriting unless user clicks save, 
-    // but the UI will now show the correct active items.
 
     // LOAD ARCHIVE TREE
     loadGlobalArchives();
