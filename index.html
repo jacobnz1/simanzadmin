@@ -38,7 +38,7 @@
         .login-box button { width: 100%; padding: 14px; font-size: 1.05rem; }
 
         /* LAYOUT */
-        #sima-admin-wrapper { display: none; width: 96%; height: 95vh; background-color: var(--bg-app); border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-width: 1800px; }
+        #sima-admin-wrapper { display: flex; width: 96%; height: 95vh; background-color: var(--bg-app); border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-width: 1800px; }
         
         /* SIDEBAR */
         .sidebar { width: 260px; background-color: var(--bg-panel); display: flex; flex-direction: column; padding: 1.5rem; border-right: 1px solid var(--border); flex-shrink: 0; z-index: 10; }
@@ -175,16 +175,6 @@
     </style>
 </head>
 <body>
-
-<!-- LOGIN OVERLAY -->
-<div id="login-overlay">
-    <div class="login-box">
-        <h2>Admin Portal</h2>
-        <p>SIMA Data Management & Publishing</p>
-        <input type="password" id="admin-pass" placeholder="Enter Password" onkeypress="if(event.key === 'Enter') checkLogin()">
-        <button class="btn-primary" onclick="checkLogin()">Authenticate</button>
-    </div>
-</div>
 
 <div id="sima-admin-wrapper">
     <div class="sidebar">
@@ -555,18 +545,6 @@
 <div id="toast">Saved!</div>
 
 <script>
-// --- AUTHENTICATION ---
-function checkLogin() {
-    const pass = document.getElementById('admin-pass').value;
-    if (pass === 'McpartlinFrancke1') {
-        document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('sima-admin-wrapper').style.display = 'flex';
-        init(); // Boot system and pull DB data
-    } else {
-        alert("Authentication Failed. Incorrect Password.");
-    }
-}
-
 // --- FIREBASE INITIALIZATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyDV7t0Cv4_triZN_E3j3CjFjmBdqEZlBas",
@@ -677,8 +655,8 @@ async function init() {
         }
     });
 
-    sigActiveForecasts =[...new Map(sigActiveForecasts.map(item => [item.id || item.date, item])).values()];
-    sigArchiveData = [...new Map(sigArchiveData.map(item => [item.id || item.date, item])).values()];
+    sigActiveForecasts =[...new Map(sigActiveForecasts.map(item =>[item.id || item.date, item])).values()];
+    sigArchiveData =[...new Map(sigArchiveData.map(item => [item.id || item.date, item])).values()];
     sigActiveForecasts.sort((a, b) => new Date(a.date) - new Date(b.date));
     
     const container = document.getElementById('swo-entries-container');
@@ -783,7 +761,7 @@ function editStorm(i) {
 function archiveStorm(i) { archives.storm.push(data.storm[i]); data.storm.splice(i, 1); renderStormList(); }
 async function saveStorm() { 
     toast('Saving...');
-    await db.ref('sima/storm').set({outlooks: data.storm || [], archive: archives.storm ||[]}); 
+    await db.ref('sima/storm').set({outlooks: data.storm ||[], archive: archives.storm ||[]}); 
     toast('Published StormCast!'); 
 }
 
@@ -977,7 +955,7 @@ function generateStatement() {
             if (sl || fl) output.push(`\n • ${sl ? `Snow level expected ${sl}` : ""}${sl&&fl ? `, with the ` : ""}${fl ? `Freezing level around ${fl}` : ""}.`);
             if (document.getElementById('gen-snow-blowing').checked) output.push("\n • Blowing snow is possible, which may severely reduce visibility and cause drifting.");
         }
-        if (downpours || thunder) output.push(`\n • ${(downpours ? ["Downpours"] : []).concat(thunder ? ["Thunderstorms"] :[]).join(" and/or ")} are possible. This may significantly boost ${type === 'rain'?'rainfall':'snowfall'} totals in localised areas.`);
+        if (downpours || thunder) output.push(`\n • ${(downpours ? ["Downpours"] :[]).concat(thunder ? ["Thunderstorms"] :[]).join(" and/or ")} are possible. This may significantly boost ${type === 'rain'?'rainfall':'snowfall'} totals in localised areas.`);
         
         if (output[output.length - 1] === "\n\nCONDITIONS & RISKS:") output.push("\n • General standard precautions apply for this weather type.");
         if (uncertainty) output.push("\n\nFORECAST UNCERTAINTY:\nThere remains some uncertainty regarding the exact track and intensity of this weather system. Accumulations may be updated in subsequent forecasts.");
@@ -1017,15 +995,13 @@ function loadGlobalArchives() {
         allArchives.push({ date: d, type: 'Alert', tag: 'tag-alert', title: i.weatherType, sub: (i.type || 'Warning') + ' - ' + (i.regions || 'General'), text: i.summary, fullData: i });
     });
 
-    // 2. StormCast
-    [...(data.storm||[]), ...(archives.storm||[])].forEach(i => {
+    // 2. StormCast[...(data.storm||[]), ...(archives.storm||[])].forEach(i => {
         if(!i.validFrom) return;
         const d = i.validFrom.includes('T') ? i.validFrom.split('T')[0] : i.validFrom;
         allArchives.push({ date: d, type: 'StormCast', tag: 'tag-storm', title: i.title || 'Thunderstorm Risk', sub: 'Convective Outlook', text: i.overallDiscussion, img: i.mapUrl, fullData: i });
     });
 
-    // 3. SnowCast (Now links maps mapped to region)
-    [...(data.snow||[]), ...(archives.snow||[])].forEach(i => {
+    // 3. SnowCast (Now links maps mapped to region)[...(data.snow||[]), ...(archives.snow||[])].forEach(i => {
         if(!i.validFrom) return;
         const d = i.validFrom.includes('T') ? i.validFrom.split('T')[0] : i.validFrom;
         allArchives.push({ date: d, type: 'SnowCast', tag: 'tag-snow', title: i.region + ' (' + (i.riskLevel || 'Risk') + ')', sub: 'Snow Warning', text: i.summary, img: i.mapUrl, fullData: i });
@@ -1187,6 +1163,8 @@ function closeArchModal() {
 
 document.getElementById('am-overlay').addEventListener('click', (e) => { if(e.target === e.currentTarget) closeArchModal(); });
 
+// Boot system automatically on load
+window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
