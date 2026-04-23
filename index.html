@@ -195,8 +195,6 @@
         }
 
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -424,23 +422,11 @@
 <div id="toast">Saved!</div>
 
 <script>
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDV7t0Cv4_triZN_E3j3CjFjmBdqEZlBas",
-  authDomain: "simaadmin.firebaseapp.com",
-  databaseURL: "https://simaadmin-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "simaadmin",
-  storageBucket: "simaadmin.firebasestorage.app",
-  messagingSenderId: "699189902374",
-  appId: "1:699189902374:web:c1415680b0da63041b7ae7",
-  measurementId: "G-QK6WCKLX47"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
+const KEY = '$2a$10$/h3xvps5BAmoU8dJigw8T.qYg3eoESVLwjXbX9aHmb85Y96cExsCe';
 const IMG_KEY = '11bca15e224ed683c68e78cc0013c205';
-const getDB = async (path) => { try { const snap = await db.ref(path).get(); return snap.exists() ? snap.val() : {}; } catch(e) { return {}; } };
-const setDB = async (path, payload) => { await db.ref(path).set(payload); };
+const BINS = { alerts:'68db095dae596e708f0072be', storm:'68d8cdac43b1c97be9528f9b', snow:'68e0738e43b1c97be9599eb1', sig:'68d8c3c6d0ea881f408d7a5c', drought:'68d9fc07d0ea881f408e8e5b' };
+const api = (b) => `https://api.jsonbin.io/v3/b/${BINS[b]}`;
+const getFresh = (u) => u + '?t=' + Date.now();
 
 // STATE
 let data = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
@@ -472,42 +458,44 @@ function getNZTodayISO() {
 
 // --- CORE INIT (Robust Loading) ---
 async function init() {
+    const fetchBin = (name) => fetch(getFresh(api(name)+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).catch(e => ({record:{}}));
+
     const [alertRes, stormRes, snowRes, sigRes, droughtRes] = await Promise.all([
-        getDB('alerts'), getDB('storm'), getDB('snow'), getDB('sig'), getDB('drought')
+        fetchBin('alerts'), fetchBin('storm'), fetchBin('snow'), fetchBin('sig'), fetchBin('drought')
     ]);
 
     // 1. ALERTS
-    data.alerts = alertRes.blocks || [];
-    archives.alerts = alertRes.archive || [];
-    if(alertRes.globalInfo) {
-        document.getElementById('ag-title').value = alertRes.globalInfo.title||'';
-        document.getElementById('ag-over').value = alertRes.globalInfo.overview||'';
+    data.alerts = alertRes.record.blocks || [];
+    archives.alerts = alertRes.record.archive || [];
+    if(alertRes.record.globalInfo) {
+        document.getElementById('ag-title').value = alertRes.record.globalInfo.title||'';
+        document.getElementById('ag-over').value = alertRes.record.globalInfo.overview||'';
     }
     renderAlerts();
 
     // 2. STORMCAST
-    data.storm = stormRes.outlooks || [];
-    archives.storm = stormRes.archive || [];
+    data.storm = stormRes.record.outlooks || [];
+    archives.storm = stormRes.record.archive || [];
     renderStormList();
 
     // 3. SNOWCAST
-    data.snow = snowRes.forecasts || [];
-    archives.snow = snowRes.archive || [];
-    document.getElementById('sc-title').value = snowRes.mainTitle||'';
-    document.getElementById('sc-over').value = snowRes.overview||'';
+    data.snow = snowRes.record.forecasts || [];
+    archives.snow = snowRes.record.archive || [];
+    document.getElementById('sc-title').value = snowRes.record.mainTitle||'';
+    document.getElementById('sc-over').value = snowRes.record.overview||'';
     renderSnowList();
 
     // 4. DROUGHT
-    data.drought = droughtRes.alerts || [];
-    archives.drought = droughtRes.archive || [];
-    if(droughtRes.overview) {
-        document.getElementById('dc-title').value = droughtRes.overview.title||'';
-        document.getElementById('dc-sum').value = droughtRes.overview.summary||'';
+    data.drought = droughtRes.record.alerts || [];
+    archives.drought = droughtRes.record.archive || [];
+    if(droughtRes.record.overview) {
+        document.getElementById('dc-title').value = droughtRes.record.overview.title||'';
+        document.getElementById('dc-sum').value = droughtRes.record.overview.summary||'';
     }
     renderDroughtList();
 
     // 5. SIG WEATHER (Updated with NZ Time Archiving & Data Restoration)
-    const sd = sigRes || {};
+    const sd = sigRes.record || {};
     document.getElementById('swo-overallTitle').value = sd.overallTitle || '';
     document.getElementById('swo-overallSummary').value = sd.overallSummary || '';
     
@@ -578,7 +566,7 @@ function stageAlert() {
     renderAlerts(); document.getElementById('ag-reg').value = ''; document.getElementById('ag-det').value = '';
 }
 async function saveAlerts() {
-    toast('Saving...'); await setDB('alerts', {globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value }, blocks: data.alerts, archive: archives.alerts}); toast('Published!');
+    toast('Saving...'); await fetch(api('alerts'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value }, blocks: data.alerts, archive: archives.alerts})}); toast('Published!');
 }
 
 /* --- STORMCAST FUNCTIONS --- */
@@ -684,7 +672,7 @@ function archiveStorm(i) {
     data.storm.splice(i, 1);
     renderStormList();
 }
-async function saveStorm() { await setDB('storm', {outlooks:data.storm, archive:archives.storm}); toast('Published!'); }
+async function saveStorm() { await fetch(api('storm'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({outlooks:data.storm, archive:archives.storm})}); toast('Published!'); }
 
 function addSnowRegion() { data.snow.push({region: document.getElementById('sc-reg-name').value, riskLevel: document.getElementById('sc-reg-risk').value, validFrom: document.getElementById('sc-start').value, validTo: document.getElementById('sc-end').value, summary: document.getElementById('sc-reg-sum').value}); renderSnowList(); }
 function renderSnowList() { 
@@ -716,7 +704,7 @@ function archiveSnow(i) {
     data.snow.splice(i, 1);
     renderSnowList();
 }
-async function saveSnow() { await setDB('snow', {mainTitle:document.getElementById('sc-title').value, overview:document.getElementById('sc-over').value, forecasts:data.snow, archive:archives.snow}); toast('Published!'); }
+async function saveSnow() { await fetch(api('snow'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({mainTitle:document.getElementById('sc-title').value, overview:document.getElementById('sc-over').value, forecasts:data.snow, archive:archives.snow})}); toast('Published!'); }
 
 function createSigEntryElement(entryData = {}) {
     const id = entryData.id || `entry-${Date.now()}-${Math.random()}`; const container = document.getElementById('swo-entries-container'); const div = document.createElement('div'); div.className = 'daily-forecast-card'; div.setAttribute('data-id', id);
@@ -735,7 +723,7 @@ async function saveSigWeather(isSilent = false) {
         return { id: entry.getAttribute('data-id'), date: entry.querySelector('.forecast-date').value, summary: entry.querySelector('.forecast-summary').value, alertLevel: entry.querySelector('.forecast-alert-level').value, imageUrl: url };
     });
     const newForecasts = (await Promise.all(promises)).filter(f => f.date);
-    await setDB('sig', {overallTitle: document.getElementById('swo-overallTitle').value, overallSummary: document.getElementById('swo-overallSummary').value, forecasts: newForecasts, archive: sigArchiveData});
+    await fetch(api('sig'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({overallTitle: document.getElementById('swo-overallTitle').value, overallSummary: document.getElementById('swo-overallSummary').value, forecasts: newForecasts, archive: sigArchiveData})});
     if(!isSilent) { toast('Published!'); }
 }
 
@@ -770,7 +758,7 @@ function archiveDrought(i) {
     renderDroughtList();
 }
 async function saveDrought() { 
-    await setDB('drought', {overview:{title:document.getElementById('dc-title').value, summary:document.getElementById('dc-sum').value}, alerts:data.drought, archive: archives.drought}); toast('Published!'); 
+    await fetch(api('drought'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({overview:{title:document.getElementById('dc-title').value, summary:document.getElementById('dc-sum').value}, alerts:data.drought, archive: archives.drought})}); toast('Published!'); 
 }
 
 // --- ROBUST UNIFIED ARCHIVE SYSTEM ---
