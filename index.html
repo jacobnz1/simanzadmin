@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-NZ">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIMA Admin V39 (Mobile Responsive)</title>
+    <title>SIMA Admin V39 (Secure Portal)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- FIREBASE LIBRARIES -->
+    <!-- FIREBASE LIBRARIES (v8 Compat) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
@@ -26,10 +26,19 @@
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
-        body { margin: 0; padding: 0; background-color: #d1d5db; font-family: 'Inter', sans-serif; color: var(--text-main); height: 100vh; display: flex; align-items: center; justify-content: center; }
+        body { margin: 0; padding: 0; background-color: #d1d5db; font-family: 'Inter', sans-serif; color: var(--text-main); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         
+        /* LOGIN MODAL */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111827; z-index: 99999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .login-box { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; }
+        .login-box h2 { margin-top: 0; color: #1f2937; margin-bottom: 5px; font-weight: 800; }
+        .login-box p { color: #6b7280; margin-bottom: 25px; font-size: 0.9rem; }
+        .login-box input { width: 100%; padding: 14px; margin-bottom: 20px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s; text-align: center; font-family: monospace; letter-spacing: 2px; }
+        .login-box input:focus { border-color: var(--primary); outline: none; }
+        .login-box button { width: 100%; padding: 14px; font-size: 1.05rem; }
+
         /* LAYOUT */
-        #sima-admin-wrapper { display: flex; width: 96%; height: 95vh; background-color: var(--bg-app); border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-width: 1800px; }
+        #sima-admin-wrapper { display: none; width: 96%; height: 95vh; background-color: var(--bg-app); border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-width: 1800px; }
         
         /* SIDEBAR */
         .sidebar { width: 260px; background-color: var(--bg-panel); display: flex; flex-direction: column; padding: 1.5rem; border-right: 1px solid var(--border); flex-shrink: 0; z-index: 10; }
@@ -46,7 +55,6 @@
 
         /* CARDS */
         .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); transition: transform 0.2s; }
-        .card:hover { border-color: #d1d5db; }
         
         /* FORMS */
         .form-group { margin-bottom: 1.25rem; }
@@ -59,7 +67,7 @@
         button { cursor: pointer; font-weight: 600; border: none; border-radius: var(--radius); padding: 12px 24px; font-size: 0.95rem; transition: all 0.2s; color: white; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         button:active { transform: translateY(1px); }
         .btn-primary { background: var(--primary); box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
-        .btn-primary:hover { background: var(--primary-hover); box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.5); }
+        .btn-primary:hover { background: var(--primary-hover); }
         .btn-success { background: var(--success); }
         .btn-success:hover { background: #059669; }
         .btn-danger { background: var(--danger); }
@@ -83,61 +91,56 @@
         .sub-item { background: white; padding: 16px; border: 1px solid #e5e7eb; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); transition: border-left 0.3s; }
         .btn-group { display: flex; gap: 8px; }
 
-        /* --- SIG WEATHER SPECIFIC --- */
+        /* --- GENERATOR SPECIFIC (Integrated smoothly) --- */
+        .generator-tabs { display: flex; gap: 8px; margin-bottom: 20px; background: #f3f4f6; padding: 6px; border-radius: 12px; }
+        .gen-tab-btn { flex: 1; background: transparent; border: none; padding: 10px 15px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; color: var(--text-muted); transition: all 0.2s; }
+        .gen-tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .gen-tab-content { display: none; animation: fadeIn 0.3s; }
+        .gen-tab-content.active { display: block; }
+        .checkbox-group { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid var(--border); }
+        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--primary); cursor: pointer; }
+        .checkbox-group label { margin: 0; font-weight: 400; cursor: pointer; color: var(--text-main); line-height: 1.4; text-transform: none; letter-spacing: normal; font-size: 0.95rem; }
+        .time-row { display: flex; align-items: flex-end; gap: 10px; }
+        .btn-now { background: #e5e7eb; color: var(--text-main); padding: 12px; }
+        .dynamic-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .output-box { background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', monospace; padding: 25px; border-radius: 10px; white-space: pre-wrap; height: 500px; overflow-y: auto; line-height: 1.6; font-size: 14px; border: 2px solid #374151; }
+        .disclaimer-box { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 15px; margin-top: 20px; border-radius: 0 8px 8px 0; font-size: 13px; color: #0c4a6e; line-height: 1.5; }
+
+        /* --- SIG WEATHER & MISC SPECIFIC --- */
         .daily-forecast-card { border: 1px solid var(--border); border-radius: 12px; margin-top: 1.5rem; background: #fff; overflow: hidden; box-shadow: var(--shadow); }
         .daily-forecast-card header { background-color: #f8fafc; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
         .daily-forecast-card header h3 { margin: 0; color: var(--text-main); font-size: 1rem; }
         .daily-forecast-card .content { padding: 1.5rem; }
-        
         .image-uploader .preview { width: 100%; max-width: 200px; height: 120px; object-fit: cover; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border); display: none; background: #f3f4f6; }
         .image-uploader .preview.visible { display: block; }
         .remove-day-btn { background: transparent; color: #9ca3af; border: none; font-size: 1.5rem; cursor: pointer; padding: 4px; line-height: 1; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
-        .remove-day-btn:hover { background: #fee2e2; color: #ef4444; }
-
+        
         /* --- ARCHIVE SYSTEM --- */
-        .archive-toolbar {
-            display: grid; 
-            grid-template-columns: 1.5fr 1fr 1fr 1fr; 
-            gap: 10px; 
-            padding: 15px; 
-            background: #f8fafc; 
-            border-bottom: 1px solid var(--border);
-            align-items: end;
-        }
+        .archive-toolbar { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 10px; padding: 15px; background: #f8fafc; border-bottom: 1px solid var(--border); align-items: end; }
         .archive-toolbar label { font-size: 0.75rem; margin-bottom: 4px; color: #6b7280; font-weight:600; }
         .archive-toolbar select, .archive-toolbar input { padding: 8px; font-size: 0.85rem; }
-
         .archive-wrapper { display: flex; gap: 20px; height: 650px; border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; background: white; }
         .archive-tree { width: 300px; border-right: 1px solid var(--border); overflow-y: auto; padding: 15px; background: #f9fafb; flex-shrink: 0; }
         .archive-viewer { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        
-        /* Tree */
         .tree-year { font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #374151; padding: 8px; border-radius: 4px; background:white; border:1px solid #e5e7eb; }
         .tree-year:hover { background: #e5e7eb; }
         .tree-year::before { content: '📂'; font-size: 1rem; }
-        
         .month-container { display: none; margin-left: 12px; border-left: 2px solid #cbd5e1; padding-left: 12px; margin-top:5px; margin-bottom:5px;}
         .tree-year.open + .month-container { display: block; }
-        
         .tree-month { font-weight: 600; margin-bottom: 3px; cursor: pointer; color: #4b5563; padding: 6px; border-radius: 4px; display: flex; align-items: center; gap: 6px; }
         .tree-month:hover { background: #e5e7eb; color: var(--primary); }
         .tree-month::before { content: '📁'; font-size: 0.9rem; }
-        
         .day-container { display: none; margin-left: 15px; border-left: 2px solid #e5e7eb; padding-left: 10px; margin-bottom: 5px; }
         .tree-month.open + .day-container { display: block; }
-
         .day-item { padding: 6px 10px; cursor: pointer; color: #6b7280; border-radius: 4px; font-size: 0.85rem; margin-bottom: 2px; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
         .day-item::before { content: '📄'; font-size: 0.9rem; opacity: 0.7; }
         .day-item:hover { background: #e5e7eb; color: var(--text-main); }
         .day-item.selected { background: #eff6ff; color: var(--primary); font-weight: 600; border-left: 3px solid var(--primary); }
-
-        /* Archive Viewer Items */
         .arch-entry { border: 1px solid var(--border); border-radius: 8px; padding: 20px; background: white; transition: all 0.2s; cursor: pointer; display: flex; gap: 15px; align-items: start; }
         .arch-entry:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .arch-thumb { width: 80px; height: 80px; border-radius: 6px; object-fit: cover; background: #f3f4f6; border: 1px solid var(--border); flex-shrink: 0; }
         .arch-content { flex-grow: 1; }
         .arch-tag { display: inline-block; padding: 4px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
-        
         .tag-alert { background: #fee2e2; color: #991b1b; }
         .tag-storm { background: #dcfce7; color: #166534; }
         .tag-snow { background: #e0f2fe; color: #075985; }
@@ -145,63 +148,43 @@
         .tag-drought { background: #ffedd5; color: #9a3412; }
         
         /* Archive Modal */
-        .arch-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.3s; }
+        .arch-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 20000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.3s; }
         .arch-modal-overlay.visible { opacity: 1; }
         .arch-modal { background: white; width: 800px; max-width: 95%; max-height: 90vh; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: scale(0.95); transition: transform 0.3s; }
         .arch-modal-overlay.visible .arch-modal { transform: scale(1); }
-        
         .am-head { padding: 20px 30px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f9fafb; }
         .am-head h3 { font-size: 1.2rem; font-weight: 700; }
         .am-close-btn { background: #f3f4f6; width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: #4b5563; transition: 0.2s; }
-        .am-close-btn:hover { background: #fee2e2; color: #ef4444; }
-
         .am-body { padding: 40px; overflow-y: auto; flex-grow: 1; }
         .am-img { width: 100%; max-height: 500px; object-fit: contain; border-radius: 8px; margin-top: 25px; background: #f3f4f6; border: 1px solid var(--border); display:block; }
         .am-text { white-space: pre-line; line-height: 1.7; color: #374151; font-size: 1.05rem; }
-        
         .am-footer { padding: 20px; border-top: 1px solid var(--border); background: #f9fafb; text-align: right; }
 
-        /* --- RESPONSIVE / MOBILE CSS --- */
         @media (max-width: 900px) {
-            /* Reset Layout */
             #sima-admin-wrapper { flex-direction: column; height: 100vh; width: 100%; border-radius: 0; }
-            body { background-color: #f3f4f6; }
-
-            /* Top Navigation Bar (Scrollable) */
-            .sidebar { 
-                width: 100%; flex-direction: row; overflow-x: auto; 
-                padding: 10px 15px; border-right: none; border-bottom: 1px solid var(--border); 
-                height: auto; flex-shrink: 0; background: white; align-items: center; 
-                white-space: nowrap; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            }
-            .brand { display: none; } /* Hide brand on mobile to save space */
+            .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 10px 15px; border-right: none; border-bottom: 1px solid var(--border); height: auto; flex-shrink: 0; background: white; align-items: center; white-space: nowrap; }
+            .brand { display: none; } 
             .nav-btn { width: auto; margin: 0 5px; padding: 8px 12px; font-size: 0.85rem; }
-            
-            /* Content Area */
             .main-content { padding: 15px; }
-            h1 { font-size: 1.5rem; }
-
-            /* Grids collapse to single column */
             .grid-2 { grid-template-columns: 1fr; gap: 1rem; }
-            
-            /* Archive System Mobile */
             .archive-toolbar { grid-template-columns: 1fr; gap: 10px; }
             .archive-wrapper { flex-direction: column; height: auto; min-height: 600px; }
             .archive-tree { width: 100%; height: 220px; border-right: none; border-bottom: 1px solid var(--border); }
             .archive-viewer { width: 100%; height: 400px; padding: 15px; }
-            .arch-entry { padding: 15px; }
-            .arch-thumb { width: 60px; height: 60px; }
-
-            /* Archive Modal Mobile */
-            .arch-modal { width: 95%; max-height: 85vh; }
-            .am-body { padding: 20px; }
-            .am-head { padding: 15px 20px; }
-            .am-img { max-height: 300px; }
         }
-
     </style>
 </head>
 <body>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay">
+    <div class="login-box">
+        <h2>Admin Portal</h2>
+        <p>SIMA Data Management & Publishing</p>
+        <input type="password" id="admin-pass" placeholder="Enter Password" onkeypress="if(event.key === 'Enter') checkLogin()">
+        <button class="btn-primary" onclick="checkLogin()">Authenticate</button>
+    </div>
+</div>
 
 <div id="sima-admin-wrapper">
     <div class="sidebar">
@@ -211,6 +194,7 @@
         <button class="nav-btn" onclick="setTab('snow')">SnowCast</button>
         <button class="nav-btn" onclick="setTab('sigweather')">Sig. Weather</button>
         <button class="nav-btn" onclick="setTab('drought')">DroughtCast</button>
+        <button class="nav-btn" onclick="setTab('generator')" style="border: 1px solid #cbd5e1; margin-top: 15px; background: #eff6ff; color: #1d4ed8;">Alert Generator</button>
         <button class="nav-btn" onclick="setTab('archive')" style="margin-top:auto; background:#1f2937; color:#e5e7eb;">System Archives</button>
     </div>
 
@@ -287,18 +271,25 @@
                 <div class="form-group"><label>Main Title</label><input id="sc-title"></div>
                 <div class="form-group"><label>Overview</label><textarea id="sc-over" rows="2"></textarea></div>
             </div>
-            <div class="card">
-                <h3>Add Region</h3>
+            <div class="card" style="border-left: 5px solid #0284c7;">
+                <h3>Add Region Risk</h3>
                 <div class="grid-2">
-                    <div class="form-group"><label>Region</label><input id="sc-reg-name"></div>
-                    <div class="form-group"><label>Risk</label><select id="sc-reg-risk"><option>Slight</option><option>High</option></select></div>
+                    <div class="form-group"><label>Region</label><input id="sc-reg-name" placeholder="e.g. Canterbury High Country"></div>
+                    <div class="form-group"><label>Risk Level</label><select id="sc-reg-risk"><option>Slight</option><option>Moderate</option><option>High</option></select></div>
                 </div>
                 <div class="grid-2">
-                    <div class="form-group"><label>From</label><input type="datetime-local" id="sc-start"></div>
-                    <div class="form-group"><label>To</label><input type="datetime-local" id="sc-end"></div>
+                    <div class="form-group"><label>Valid From</label><input type="datetime-local" id="sc-start"></div>
+                    <div class="form-group"><label>Valid To</label><input type="datetime-local" id="sc-end"></div>
                 </div>
                 <div class="form-group"><label>Details</label><textarea id="sc-reg-sum"></textarea></div>
-                <button onclick="addSnowRegion()" class="btn-success" style="width:100%">Add Region</button>
+                
+                <!-- NEW MAP UPLOAD FOR SNOWCAST -->
+                <div class="form-group image-uploader">
+                    <label>Map Image Highlighting Risk</label>
+                    <input type="file" id="sc-reg-img" accept="image/*">
+                </div>
+                
+                <button onclick="addSnowRegion()" class="btn-success" style="width:100%">Add Regional Forecast</button>
             </div>
             <div id="sc-regions-list" class="card"></div>
             <button class="btn-primary" onclick="saveSnow()">Publish SnowCast</button>
@@ -330,28 +321,172 @@
                 <div class="form-group"><label>Title</label><input id="dc-title"></div>
                 <div class="form-group"><label>Summary</label><textarea id="dc-sum" rows="2"></textarea></div>
             </div>
-            <div class="card">
-                <h3>Add Alert</h3>
+            <div class="card" style="border-left: 5px solid #d97706;">
+                <h3>Add Drought Alert</h3>
                 <div class="grid-2">
                     <div class="form-group"><label>Region</label><input id="dc-reg"></div>
-                    <div class="form-group"><label>Severity</label><select id="dc-sev"><option>Low</option><option>High</option></select></div>
+                    <div class="form-group"><label>Severity Risk</label><select id="dc-sev"><option>Low</option><option>Moderate</option><option>High</option><option>Extreme</option></select></div>
                 </div>
                 <div class="grid-2">
-                    <div class="form-group"><label>Rain Potential</label><input id="dc-rain"></div>
+                    <div class="form-group"><label>Rain Potential</label><input id="dc-rain" placeholder="e.g. Low probability next 10 days"></div>
                     <div class="form-group"><label>Expires</label><input type="date" id="dc-end"></div>
                 </div>
                 <div class="form-group"><label>Details</label><textarea id="dc-det"></textarea></div>
+                
+                <!-- NEW MAP UPLOAD FOR DROUGHTCAST -->
+                <div class="form-group image-uploader">
+                    <label>Map Image Highlighting Risk</label>
+                    <input type="file" id="dc-reg-img" accept="image/*">
+                </div>
+                
                 <button onclick="addDroughtAlert()" class="btn-success" style="width:100%">Add Alert</button>
             </div>
             <div id="dc-list" class="card"></div>
             <button class="btn-primary" onclick="saveDrought()">Publish DroughtCast</button>
         </div>
 
+        <!-- ALERT GENERATOR TAB -->
+        <div id="tab-generator" class="tab-pane">
+            <h1>Special Weather Statement Generator</h1>
+            <p style="color:var(--text-muted); margin-top:-15px; margin-bottom:25px;">Build impact-based secondary opinions without losing progress.</p>
+            
+            <div class="grid-2">
+                <!-- FORM PANEL -->
+                <div class="card" style="margin-bottom:0;">
+                    <h2>General Details</h2>
+                    
+                    <div class="form-group">
+                        <label for="gen-regions">Region/Regions Affected:</label>
+                        <input type="text" id="gen-regions" placeholder="e.g., Coastal Banks Peninsula, Canterbury Plains">
+                    </div>
+
+                    <div class="grid-2" style="gap:10px;">
+                        <div class="form-group">
+                            <label for="gen-severity">Event Severity:</label>
+                            <select id="gen-severity">
+                                <option value="minimal">Minimal</option>
+                                <option value="enhanced">Enhanced</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="gen-nextUpdate">Next Update Expected:</label>
+                            <div class="time-row">
+                                <input type="datetime-local" id="gen-nextUpdate">
+                                <button type="button" class="btn-now" onclick="setGenNow('gen-nextUpdate')" title="Set to current time">NOW</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+                    
+                    <h2>Weather Threat</h2>
+                    <div class="generator-tabs">
+                        <button class="gen-tab-btn active" onclick="switchGenTab('rain', event)">Heavy Rain</button>
+                        <button class="gen-tab-btn" onclick="switchGenTab('snow', event)">Heavy Snow</button>
+                        <button class="gen-tab-btn" onclick="switchGenTab('gales', event)">Severe Gales</button>
+                    </div>
+
+                    <!-- HEAVY RAIN TAB -->
+                    <div id="gtab-rain" class="gen-tab-content active">
+                        <div class="grid-2" style="gap:10px;">
+                            <div class="form-group">
+                                <label>Valid From:</label>
+                                <div class="time-row">
+                                    <input type="datetime-local" id="gen-rain-start">
+                                    <button type="button" class="btn-now" onclick="setGenNow('gen-rain-start')">NOW</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Valid Until:</label>
+                                <input type="datetime-local" id="gen-rain-end">
+                            </div>
+                        </div>
+                        <div class="form-group"><label>Total Accumulated Precipitation:</label><input type="text" id="gen-rain-total" placeholder="e.g., 100 to 150 mm"></div>
+                        <div class="checkbox-group"><input type="checkbox" id="gen-rain-ontop"><label for="gen-rain-ontop"><strong>On top of what has already fallen</strong><br><small>Applies to the total and all district breakdowns.</small></label></div>
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+                        <label>Area Breakdown (District by District):</label>
+                        <div id="gen-rain-districts"></div>
+                        <button class="btn-success btn-sm" style="margin-bottom:20px;" onclick="addGenDistrict('rain')">+ Add Area</button>
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+                        <label>Additional Factors:</label>
+                        <div class="checkbox-group"><input type="checkbox" id="gen-rain-downpours"><label for="gen-rain-downpours">Downpours possible</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="gen-rain-thunder"><label for="gen-rain-thunder">Thunderstorms possible</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="gen-rain-uncertainty"><label for="gen-rain-uncertainty">Add track/intensity uncertainty statement</label></div>
+                    </div>
+
+                    <!-- HEAVY SNOW TAB -->
+                    <div id="gtab-snow" class="gen-tab-content">
+                        <div class="grid-2" style="gap:10px;">
+                            <div class="form-group">
+                                <label>Valid From:</label>
+                                <div class="time-row">
+                                    <input type="datetime-local" id="gen-snow-start">
+                                    <button type="button" class="btn-now" onclick="setGenNow('gen-snow-start')">NOW</button>
+                                </div>
+                            </div>
+                            <div class="form-group"><label>Valid Until:</label><input type="datetime-local" id="gen-snow-end"></div>
+                        </div>
+                        <div class="form-group"><label>Total Accumulated Snowfall:</label><input type="text" id="gen-snow-total" placeholder="e.g., 20 to 30 cm"></div>
+                        <div class="checkbox-group"><input type="checkbox" id="gen-snow-ontop"><label for="gen-snow-ontop"><strong>On top of what has already fallen</strong></label></div>
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+                        <label>Area Breakdown:</label>
+                        <div id="gen-snow-districts"></div>
+                        <button class="btn-success btn-sm" style="margin-bottom:20px;" onclick="addGenDistrict('snow')">+ Add Area</button>
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+                        <div class="grid-2" style="gap:10px;">
+                            <div class="form-group"><label>Snow Level:</label><input type="text" id="gen-snow-level" placeholder="e.g., down to 400m"></div>
+                            <div class="form-group"><label>Freezing Level:</label><input type="text" id="gen-freezing-level" placeholder="e.g., 600m"></div>
+                        </div>
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+                        <label>Additional Factors:</label>
+                        <div class="checkbox-group"><input type="checkbox" id="gen-snow-blowing"><label for="gen-snow-blowing">Blowing snow possible (drifting)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="gen-snow-downpours"><label for="gen-snow-downpours">Downpours possible</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="gen-snow-thunder"><label for="gen-snow-thunder">Thunderstorms possible</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="gen-snow-uncertainty"><label for="gen-snow-uncertainty">Add uncertainty statement</label></div>
+                    </div>
+
+                    <!-- SEVERE GALES TAB -->
+                    <div id="gtab-gales" class="gen-tab-content">
+                        <div class="grid-2" style="gap:10px;">
+                            <div class="form-group">
+                                <label>Valid From:</label>
+                                <div class="time-row">
+                                    <input type="datetime-local" id="gen-gale-start">
+                                    <button type="button" class="btn-now" onclick="setGenNow('gen-gale-start')">NOW</button>
+                                </div>
+                            </div>
+                            <div class="form-group"><label>Valid Until:</label><input type="datetime-local" id="gen-gale-end"></div>
+                        </div>
+                        <div class="form-group"><label>Peak Wind Gusts:</label><input type="text" id="gen-gale-peak" placeholder="e.g., 120 km/h in exposed places"></div>
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+                        <label>Wind Direction & Timing:</label>
+                        <div id="gen-gale-winds"></div>
+                        <button class="btn-success btn-sm" style="margin-bottom:20px;" onclick="addGenWindDirection()">+ Add Wind Direction</button>
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+                        <div class="checkbox-group"><input type="checkbox" id="gen-gale-uncertainty"><label for="gen-gale-uncertainty">Add uncertainty statement</label></div>
+                    </div>
+
+                    <button class="btn-primary" style="width:100%; margin-top:15px; padding:16px; font-size:1.1rem;" onclick="generateStatement()">Generate Statement</button>
+
+                    <div class="disclaimer-box">
+                        <strong>Important:</strong> MetService is New Zealand's only national weather authority. This tool generates second-opinion guidance for impactful weather approaching the South Island.
+                    </div>
+                </div>
+
+                <!-- OUTPUT PANEL -->
+                <div class="card" style="margin-bottom:0; display:flex; flex-direction:column;">
+                    <h2>Statement Output</h2>
+                    <div id="gen-output" class="output-box">Your generated Special Weather Statement will appear here...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- UNIFIED ARCHIVE TAB -->
         <div id="tab-archive" class="tab-pane">
             <h1>System Archives</h1>
             <div class="card" style="padding:0; overflow:hidden;">
-                
                 <!-- ARCHIVE TOOLBAR (Filters only) -->
                 <div class="archive-toolbar">
                     <div>
@@ -365,16 +500,9 @@
                             <option value="DroughtCast">DroughtCast</option>
                         </select>
                     </div>
-                    <div>
-                        <label>Start Date</label>
-                        <input type="date" id="arch-filter-start" onchange="applyArchFilters()">
-                    </div>
-                    <div>
-                        <label>End Date</label>
-                        <input type="date" id="arch-filter-end" onchange="applyArchFilters()">
-                    </div>
-                    <div>
-                        <label>Sort Order</label>
+                    <div><label>Start Date</label><input type="date" id="arch-filter-start" onchange="applyArchFilters()"></div>
+                    <div><label>End Date</label><input type="date" id="arch-filter-end" onchange="applyArchFilters()"></div>
+                    <div><label>Sort Order</label>
                         <select id="arch-filter-sort" onchange="applyArchFilters()">
                             <option value="desc">Newest First</option>
                             <option value="asc">Oldest First</option>
@@ -394,7 +522,7 @@
                     </div>
                 </div>
                 <div style="padding:15px; background:#f3f4f6; border-top:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center;">
-                    <small style="color:#6b7280;">Archives include full historical and active data.</small>
+                    <small style="color:#6b7280;">Archives include full historical and active data mapped securely.</small>
                     <button class="btn-secondary btn-sm" onclick="loadGlobalArchives()">Force Refresh</button>
                 </div>
             </div>
@@ -427,26 +555,34 @@
 <div id="toast">Saved!</div>
 
 <script>
+// --- AUTHENTICATION ---
+function checkLogin() {
+    const pass = document.getElementById('admin-pass').value;
+    if (pass === 'McpartlinFrancke1') {
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('sima-admin-wrapper').style.display = 'flex';
+        init(); // Boot system and pull DB data
+    } else {
+        alert("Authentication Failed. Incorrect Password.");
+    }
+}
+
 // --- FIREBASE INITIALIZATION ---
 const firebaseConfig = {
-  apiKey: "AIzaSyDV7t0Cv4_triZN_E3j3CjFjmBdqEZlBas",
-  authDomain: "simaadmin.firebaseapp.com",
-  projectId: "simaadmin",
-  storageBucket: "simaadmin.firebasestorage.app",
-  messagingSenderId: "699189902374",
-  appId: "1:699189902374:web:c1415680b0da63041b7ae7",
-  measurementId: "G-QK6WCKLX47",
-  databaseURL: "https://simaadmin-default-rtdb.firebaseio.com"
+    apiKey: "AIzaSyDV7t0Cv4_triZN_E3j3CjFjmBdqEZlBas",
+    authDomain: "simaadmin.firebaseapp.com",
+    databaseURL: "https://simaadmin-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "simaadmin",
+    storageBucket: "simaadmin.firebasestorage.app",
+    messagingSenderId: "699189902374",
+    appId: "1:699189902374:web:c1415680b0da63041b7ae7",
+    measurementId: "G-QK6WCKLX47"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const KEY = '$2a$10$/h3xvps5BAmoU8dJigw8T.qYg3eoESVLwjXbX9aHmb85Y96cExsCe';
 const IMG_KEY = '11bca15e224ed683c68e78cc0013c205';
-const BINS = { alerts:'68db095dae596e708f0072be', storm:'68d8cdac43b1c97be9528f9b', snow:'68e0738e43b1c97be9599eb1', sig:'68d8c3c6d0ea881f408d7a5c', drought:'68d9fc07d0ea881f408e8e5b' };
-const api = (b) => `https://api.jsonbin.io/v3/b/${BINS[b]}`;
-const getFresh = (u) => u + '?t=' + Date.now();
 
 // STATE
 let data = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
@@ -463,12 +599,18 @@ function setTab(id) {
     event.target.classList.add('active');
     if(id === 'archive') loadGlobalArchives();
 }
-async function upImg(el) { if(!el.files[0]) return null; const fd = new FormData(); fd.append('image', el.files[0]); const r = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:'POST', body:fd}); const j = await r.json(); return j.data.url; }
+async function upImg(el) { 
+    if(!el.files || !el.files[0]) return null; 
+    const fd = new FormData(); 
+    fd.append('image', el.files[0]); 
+    const r = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:'POST', body:fd}); 
+    const j = await r.json(); 
+    return j.data.url; 
+}
 
-// -- DATE UTILS (NZ TIME FIX) --
+// -- DATE UTILS --
 function getNZDate() { return new Date().toLocaleString("en-NZ", { timeZone: "Pacific/Auckland" }); }
 function getNZTodayISO() {
-    // Returns YYYY-MM-DD for New Zealand
     const nz = new Date(getNZDate());
     const y = nz.getFullYear();
     const m = String(nz.getMonth()+1).padStart(2,'0');
@@ -476,76 +618,56 @@ function getNZTodayISO() {
     return `${y}-${m}-${d}`;
 }
 
-// --- CORE INIT (Robust Loading) ---
+// --- CORE INIT ---
 async function init() {
-    const fetchFB = (name) => {
-        return new Promise(resolve => {
-            db.ref('sima/' + name).once('value', async snap => {
-                let val = snap.val();
-                
-                // If Firebase has nothing, migrate from JSONBin instantly!
-                if (!val) {
-                    console.log(`Migrating ${name} data from JSONBin...`);
-                    try {
-                        const r = await fetch(getFresh(api(name)+'/latest'), {headers:{'X-Master-Key':KEY}});
-                        const j = await r.json();
-                        val = j.record;
-                        if(val) await db.ref('sima/' + name).set(val);
-                    } catch(e) { val = {}; }
-                }
-                
-                resolve({ record: val || {} });
-            });
-        });
-    };
+    toast('Fetching Data...');
+    const getRef = (path) => new Promise(res => db.ref(path).once('value', s => res(s.val() || {})));
 
-    const[alertRes, stormRes, snowRes, sigRes, droughtRes] = await Promise.all([
-        fetchFB('alerts'), fetchFB('storm'), fetchFB('snow'), fetchFB('sig'), fetchFB('drought')
+    const [alertRes, stormRes, snowRes, sigRes, droughtRes] = await Promise.all([
+        getRef('sima/alerts'), getRef('sima/storm'), getRef('sima/snow'), getRef('sima/sig'), getRef('sima/drought')
     ]);
 
     // 1. ALERTS
-    data.alerts = alertRes.record.blocks ||[];
-    archives.alerts = alertRes.record.archive ||[];
-    if(alertRes.record.globalInfo) {
-        document.getElementById('ag-title').value = alertRes.record.globalInfo.title||'';
-        document.getElementById('ag-over').value = alertRes.record.globalInfo.overview||'';
+    data.alerts = alertRes.blocks ||[];
+    archives.alerts = alertRes.archive ||[];
+    if(alertRes.globalInfo) {
+        document.getElementById('ag-title').value = alertRes.globalInfo.title||'';
+        document.getElementById('ag-over').value = alertRes.globalInfo.overview||'';
     }
     renderAlerts();
 
     // 2. STORMCAST
-    data.storm = stormRes.record.outlooks || [];
-    archives.storm = stormRes.record.archive ||[];
+    data.storm = stormRes.outlooks ||[];
+    archives.storm = stormRes.archive ||[];
     renderStormList();
 
     // 3. SNOWCAST
-    data.snow = snowRes.record.forecasts ||[];
-    archives.snow = snowRes.record.archive ||[];
-    document.getElementById('sc-title').value = snowRes.record.mainTitle||'';
-    document.getElementById('sc-over').value = snowRes.record.overview||'';
+    data.snow = snowRes.forecasts ||[];
+    archives.snow = snowRes.archive ||[];
+    document.getElementById('sc-title').value = snowRes.mainTitle||'';
+    document.getElementById('sc-over').value = snowRes.overview||'';
     renderSnowList();
 
     // 4. DROUGHT
-    data.drought = droughtRes.record.alerts ||[];
-    archives.drought = droughtRes.record.archive ||[];
-    if(droughtRes.record.overview) {
-        document.getElementById('dc-title').value = droughtRes.record.overview.title||'';
-        document.getElementById('dc-sum').value = droughtRes.record.overview.summary||'';
+    data.drought = droughtRes.alerts ||[];
+    archives.drought = droughtRes.archive ||[];
+    if(droughtRes.overview) {
+        document.getElementById('dc-title').value = droughtRes.overview.title||'';
+        document.getElementById('dc-sum').value = droughtRes.overview.summary||'';
     }
     renderDroughtList();
 
-    // 5. SIG WEATHER (Updated with NZ Time Archiving & Data Restoration)
-    const sd = sigRes.record || {};
+    // 5. SIG WEATHER
+    const sd = sigRes || {};
     document.getElementById('swo-overallTitle').value = sd.overallTitle || '';
     document.getElementById('swo-overallSummary').value = sd.overallSummary || '';
     
-    // FIX: Trust 'forecasts' list from DB first so active days don't disappear
-    sigActiveForecasts = [...(sd.forecasts || [])];
+    sigActiveForecasts =[...(sd.forecasts || [])];
     sigArchiveData =[];
     
     const todayNZ = getNZTodayISO();
     const rawArchive = [...(sd.archive || [])];
     
-    // Check archive: Restore future/today items if they were accidentally archived
     rawArchive.forEach(f => {
         if(!f.date) return;
         if(f.date >= todayNZ) {
@@ -555,18 +677,16 @@ async function init() {
         }
     });
 
-    // Remove duplicates
     sigActiveForecasts =[...new Map(sigActiveForecasts.map(item => [item.id || item.date, item])).values()];
-    sigArchiveData = [...new Map(sigArchiveData.map(item =>[item.id || item.date, item])).values()];
-
+    sigArchiveData = [...new Map(sigArchiveData.map(item => [item.id || item.date, item])).values()];
     sigActiveForecasts.sort((a, b) => new Date(a.date) - new Date(b.date));
     
     const container = document.getElementById('swo-entries-container');
     container.innerHTML = '';
     sigActiveForecasts.forEach(f => createSigEntryElement(f));
 
-    // LOAD ARCHIVE TREE
     loadGlobalArchives();
+    toast('System Ready');
 }
 
 /* --- MODULE FUNCTIONS --- */
@@ -579,7 +699,7 @@ function renderAlerts() {
             <div class="btn-group">
                 <button class="btn-secondary btn-sm" onclick="editAlert(${i})">Edit</button>
                 <button class="btn-warning btn-sm" onclick="archiveAlert(${i})">Archive</button>
-                <button class="btn-danger btn-sm" onclick="data.alerts.splice(${i},1); renderAlerts();">Delete</button>
+                <button class="btn-danger btn-sm" onclick="data.alerts.splice(${i},1); renderAlerts();">Del</button>
             </div>
         </div>`;
     });
@@ -605,59 +725,37 @@ function stageAlert() {
     renderAlerts(); document.getElementById('ag-reg').value = ''; document.getElementById('ag-det').value = '';
 }
 async function saveAlerts() {
-    toast('Saving...'); await db.ref('sima/alerts').set({globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value }, blocks: data.alerts, archive: archives.alerts}); toast('Published!');
+    toast('Saving...');
+    await db.ref('sima/alerts').set({
+        globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value }, 
+        blocks: data.alerts ||[], 
+        archive: archives.alerts ||[]
+    }); 
+    toast('Published Alerts!');
 }
 
-/* --- STORMCAST FUNCTIONS --- */
+/* --- STORMCAST --- */
 function updateStcColor(el) {
     const val = el.value;
     const parent = el.closest('.sub-item');
     if(!parent) return;
-    
-    let col = '#e5e7eb'; // default grey
+    let col = '#e5e7eb';
     if(val === 'Downpours') col = '#6366f1';
     if(val === 'Slight') col = '#eab308';
     if(val === 'Enhanced') col = '#f97316';
     if(val === 'High') col = '#ef4444';
-    
     parent.style.borderLeft = `5px solid ${col}`;
 }
 
 function addStcRegionUI() {
-    const d = document.createElement('div'); 
-    d.className='sub-item';
-    d.style.borderLeft = "5px solid #6366f1";
-    
-    d.innerHTML=`
-        <div class="form-group"><label>Region Name</label><input class="r-name" placeholder="e.g. Waikato"></div>
-        <div class="form-group">
-            <label>Risk Level</label>
-            <select class="r-lvl" onchange="updateStcColor(this)">
-                <option value="Downpours">Downpours</option>
-                <option value="Slight">Slight</option>
-                <option value="Enhanced">Enhanced</option>
-                <option value="High">High</option>
-            </select>
-        </div>
-        <div class="form-group"><label>Timeframe</label><input class="r-time" placeholder="e.g. 2pm - 8pm"></div>
-        <div class="form-group"><label>Weather Risks</label>
-            <div class="r-risks-group" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-                <label><input type="checkbox" value="Heavy Rain"> Heavy Rain</label>
-                <label><input type="checkbox" value="Downpours"> Downpours</label>
-                <label><input type="checkbox" value="Small Hail"> Small Hail</label>
-                <label><input type="checkbox" value="Large Hail"> Large Hail</label>
-                <label><input type="checkbox" value="Strong Winds 90kph"> Strong Winds 90kph</label>
-                <label><input type="checkbox" value="Strong Winds 110kph"> Strong Winds 110kph</label>
-            </div>
-        </div>
-        <div class="form-group"><label>Details</label><textarea class="r-det"></textarea></div>
-        <button class="btn-danger btn-sm" onclick="this.parentElement.remove()">Remove</button>
-    `;
+    const d = document.createElement('div'); d.className='sub-item'; d.style.borderLeft = "5px solid #6366f1";
+    d.innerHTML=`<div class="form-group"><label>Region Name</label><input class="r-name" placeholder="e.g. Waikato"></div><div class="form-group"><label>Risk Level</label><select class="r-lvl" onchange="updateStcColor(this)"><option value="Downpours">Downpours</option><option value="Slight">Slight</option><option value="Enhanced">Enhanced</option><option value="High">High</option></select></div><div class="form-group"><label>Timeframe</label><input class="r-time" placeholder="e.g. 2pm - 8pm"></div><div class="form-group"><label>Weather Risks</label><div class="r-risks-group" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;"><label><input type="checkbox" value="Heavy Rain"> Heavy Rain</label><label><input type="checkbox" value="Downpours"> Downpours</label><label><input type="checkbox" value="Small Hail"> Small Hail</label><label><input type="checkbox" value="Large Hail"> Large Hail</label><label><input type="checkbox" value="Strong Winds 90kph"> Strong Winds 90kph</label><label><input type="checkbox" value="Strong Winds 110kph"> Strong Winds 110kph</label></div></div><div class="form-group"><label>Details</label><textarea class="r-det"></textarea></div><button class="btn-danger btn-sm" onclick="this.parentElement.remove()">Remove</button>`;
     document.getElementById('stc-regions').appendChild(d);
 }
 
 async function addStormCast() {
-    toast('Uploading Map...'); const img = await upImg(document.getElementById('stc-img'));
+    toast('Uploading Map...'); 
+    const img = await upImg(document.getElementById('stc-img'));
     const regs = Array.from(document.getElementById('stc-regions').children).map(e => ({
         regionName: e.querySelector('.r-name').value, 
         riskLevel: e.querySelector('.r-lvl').value, 
@@ -672,79 +770,64 @@ async function addStormCast() {
 function renderStormList() {
     const c = document.getElementById('stc-list'); c.innerHTML='';
     data.storm.forEach((o,i) => { 
-        c.innerHTML += `
-        <div class="item-list-row">
-            <div><strong>${o.title}</strong><br><small>Expires: ${new Date(o.validUntil).toLocaleString()}</small></div>
-            <div class="btn-group">
-                <button class="btn-secondary btn-sm" onclick="editStorm(${i})">Edit</button>
-                <button class="btn-warning btn-sm" onclick="archiveStorm(${i})">Archive</button>
-                <button class="btn-danger btn-sm" onclick="data.storm.splice(${i},1);renderStormList()">Delete</button>
-            </div>
-        </div>`; 
+        c.innerHTML += `<div class="item-list-row"><div><strong>${o.title}</strong><br><small>Expires: ${new Date(o.validUntil).toLocaleString()}</small></div><div class="btn-group"><button class="btn-secondary btn-sm" onclick="editStorm(${i})">Edit</button><button class="btn-warning btn-sm" onclick="archiveStorm(${i})">Archive</button><button class="btn-danger btn-sm" onclick="data.storm.splice(${i},1);renderStormList()">Del</button></div></div>`; 
     });
 }
 function editStorm(i) {
     const s = data.storm[i];
-    document.getElementById('stc-title').value = s.title;
-    document.getElementById('stc-start').value = s.validFrom;
-    document.getElementById('stc-end').value = s.validUntil;
-    document.getElementById('stc-over').value = s.overallDiscussion;
+    document.getElementById('stc-title').value = s.title; document.getElementById('stc-start').value = s.validFrom; document.getElementById('stc-end').value = s.validUntil; document.getElementById('stc-over').value = s.overallDiscussion;
     document.getElementById('stc-regions').innerHTML = '';
-    (s.regionalForecasts ||[]).forEach(r => {
-        addStcRegionUI();
-        const el = document.getElementById('stc-regions').lastElementChild;
-        el.querySelector('.r-name').value = r.regionName;
-        el.querySelector('.r-lvl').value = r.riskLevel;
-        el.querySelector('.r-det').value = r.threats;
-        el.querySelector('.r-time').value = r.timeframe || '';
-        (r.risks ||[]).forEach(val => {
-            const cb = el.querySelector(`input[value="${val}"]`);
-            if(cb) cb.checked = true;
-        });
-        updateStcColor(el.querySelector('.r-lvl'));
-    });
-    data.storm.splice(i, 1);
-    renderStormList();
+    (s.regionalForecasts ||[]).forEach(r => { addStcRegionUI(); const el = document.getElementById('stc-regions').lastElementChild; el.querySelector('.r-name').value = r.regionName; el.querySelector('.r-lvl').value = r.riskLevel; el.querySelector('.r-det').value = r.threats; el.querySelector('.r-time').value = r.timeframe || ''; (r.risks ||[]).forEach(val => { const cb = el.querySelector(`input[value="${val}"]`); if(cb) cb.checked = true; }); updateStcColor(el.querySelector('.r-lvl')); });
+    data.storm.splice(i, 1); renderStormList();
 }
-function archiveStorm(i) {
-    archives.storm.push(data.storm[i]);
-    data.storm.splice(i, 1);
-    renderStormList();
+function archiveStorm(i) { archives.storm.push(data.storm[i]); data.storm.splice(i, 1); renderStormList(); }
+async function saveStorm() { 
+    toast('Saving...');
+    await db.ref('sima/storm').set({outlooks: data.storm || [], archive: archives.storm ||[]}); 
+    toast('Published StormCast!'); 
 }
-async function saveStorm() { await db.ref('sima/storm').set({outlooks:data.storm, archive:archives.storm}); toast('Published!'); }
 
-function addSnowRegion() { data.snow.push({region: document.getElementById('sc-reg-name').value, riskLevel: document.getElementById('sc-reg-risk').value, validFrom: document.getElementById('sc-start').value, validTo: document.getElementById('sc-end').value, summary: document.getElementById('sc-reg-sum').value}); renderSnowList(); }
+/* --- SNOWCAST (Image Supported) --- */
+async function addSnowRegion() { 
+    toast('Processing Region...');
+    let imgUrl = await upImg(document.getElementById('sc-reg-img'));
+    
+    data.snow.push({
+        region: document.getElementById('sc-reg-name').value, 
+        riskLevel: document.getElementById('sc-reg-risk').value, 
+        validFrom: document.getElementById('sc-start').value, 
+        validTo: document.getElementById('sc-end').value, 
+        summary: document.getElementById('sc-reg-sum').value,
+        mapUrl: imgUrl
+    }); 
+    renderSnowList(); 
+    document.getElementById('sc-reg-img').value = '';
+    toast('Region Saved Locally');
+}
 function renderSnowList() { 
     const c = document.getElementById('sc-regions-list'); c.innerHTML=''; 
     data.snow.forEach((f,i) => { 
-        c.innerHTML+=`
-        <div class="item-list-row">
-            <div>${f.region} (${f.riskLevel})</div>
-            <div class="btn-group">
-                <button class="btn-secondary btn-sm" onclick="editSnow(${i})">Edit</button>
-                <button class="btn-warning btn-sm" onclick="archiveSnow(${i})">Archive</button>
-                <button class="btn-danger btn-sm" onclick="data.snow.splice(${i},1);renderSnowList()">Del</button>
-            </div>
-        </div>`; 
+        c.innerHTML+=`<div class="item-list-row"><div>${f.region} (${f.riskLevel}) ${f.mapUrl ? '🌄' : ''}</div><div class="btn-group"><button class="btn-secondary btn-sm" onclick="editSnow(${i})">Edit</button><button class="btn-warning btn-sm" onclick="archiveSnow(${i})">Archive</button><button class="btn-danger btn-sm" onclick="data.snow.splice(${i},1);renderSnowList()">Del</button></div></div>`; 
     }); 
 }
 function editSnow(i) {
     const f = data.snow[i];
-    document.getElementById('sc-reg-name').value = f.region;
-    document.getElementById('sc-reg-risk').value = f.riskLevel;
-    document.getElementById('sc-start').value = f.validFrom;
-    document.getElementById('sc-end').value = f.validTo;
-    document.getElementById('sc-reg-sum').value = f.summary;
-    data.snow.splice(i, 1);
-    renderSnowList();
+    document.getElementById('sc-reg-name').value = f.region; document.getElementById('sc-reg-risk').value = f.riskLevel; document.getElementById('sc-start').value = f.validFrom; document.getElementById('sc-end').value = f.validTo; document.getElementById('sc-reg-sum').value = f.summary;
+    data.snow.splice(i, 1); renderSnowList();
 }
-function archiveSnow(i) {
-    archives.snow.push(data.snow[i]);
-    data.snow.splice(i, 1);
-    renderSnowList();
+function archiveSnow(i) { archives.snow.push(data.snow[i]); data.snow.splice(i, 1); renderSnowList(); }
+async function saveSnow() { 
+    toast('Saving...');
+    await db.ref('sima/snow').set({
+        mainTitle: document.getElementById('sc-title').value, 
+        overview: document.getElementById('sc-over').value, 
+        forecasts: data.snow ||[], 
+        archive: archives.snow ||[]
+    }); 
+    toast('Published SnowCast!'); 
 }
-async function saveSnow() { await db.ref('sima/snow').set({mainTitle:document.getElementById('sc-title').value, overview:document.getElementById('sc-over').value, forecasts:data.snow, archive:archives.snow}); toast('Published!'); }
 
+/* --- SIG WEATHER --- */
 function createSigEntryElement(entryData = {}) {
     const id = entryData.id || `entry-${Date.now()}-${Math.random()}`; const container = document.getElementById('swo-entries-container'); const div = document.createElement('div'); div.className = 'daily-forecast-card'; div.setAttribute('data-id', id);
     div.innerHTML = `<header><h3>Daily Forecast</h3><button class="remove-day-btn">×</button></header><div class="content"><div class="grid-2"><div class="form-group"><label>Date</label><input type="date" class="forecast-date" value="${entryData.date || ''}"></div><div class="form-group"><label>Alert Level</label><select class="forecast-alert-level"><option value="None" ${!entryData.alertLevel || entryData.alertLevel === 'None' ? 'selected' : ''}>None</option><option value="Slight" ${entryData.alertLevel === 'Slight' ? 'selected' : ''}>Slight</option><option value="Enhanced" ${entryData.alertLevel === 'Enhanced' ? 'selected' : ''}>Enhanced</option><option value="High" ${entryData.alertLevel === 'High' ? 'selected' : ''}>High</option><option value="Critical" ${entryData.alertLevel === 'Critical' ? 'selected' : ''}>Critical</option></select></div></div><div class="form-group image-uploader"><label>Upload Map Image</label><input type="file" class="forecast-image-upload" accept="image/*"><img class="preview ${entryData.imageUrl ? 'visible' : ''}" src="${entryData.imageUrl || ''}"><input type="hidden" class="forecast-image-url" value="${entryData.imageUrl || ''}"></div><div class="form-group"><label>Summary</label><textarea class="forecast-summary" placeholder="Enter summary...">${entryData.summary || ''}</textarea></div></div>`;
@@ -762,52 +845,173 @@ async function saveSigWeather(isSilent = false) {
         return { id: entry.getAttribute('data-id'), date: entry.querySelector('.forecast-date').value, summary: entry.querySelector('.forecast-summary').value, alertLevel: entry.querySelector('.forecast-alert-level').value, imageUrl: url };
     });
     const newForecasts = (await Promise.all(promises)).filter(f => f.date);
-    await db.ref('sima/sig').set({overallTitle: document.getElementById('swo-overallTitle').value, overallSummary: document.getElementById('swo-overallSummary').value, forecasts: newForecasts, archive: sigArchiveData});
-    if(!isSilent) { toast('Published!'); }
+    await db.ref('sima/sig').set({
+        overallTitle: document.getElementById('swo-overallTitle').value, 
+        overallSummary: document.getElementById('swo-overallSummary').value, 
+        forecasts: newForecasts ||[], 
+        archive: sigArchiveData ||[]
+    });
+    if(!isSilent) { toast('Published Sig Weather!'); }
 }
 
-function addDroughtAlert() { data.drought.push({ region: document.getElementById('dc-reg').value, severity: document.getElementById('dc-sev').value, rainPotential: document.getElementById('dc-rain').value, endDate: document.getElementById('dc-end').value, summary: document.getElementById('dc-det').value }); renderDroughtList(); }
+/* --- DROUGHTCAST (Image Supported) --- */
+async function addDroughtAlert() { 
+    toast('Processing Alert...');
+    let imgUrl = await upImg(document.getElementById('dc-reg-img'));
+    
+    data.drought.push({ 
+        region: document.getElementById('dc-reg').value, 
+        severity: document.getElementById('dc-sev').value, 
+        rainPotential: document.getElementById('dc-rain').value, 
+        endDate: document.getElementById('dc-end').value, 
+        summary: document.getElementById('dc-det').value,
+        mapUrl: imgUrl
+    }); 
+    renderDroughtList(); 
+    document.getElementById('dc-reg-img').value = '';
+    toast('Alert Saved Locally');
+}
 function renderDroughtList() { 
     const c = document.getElementById('dc-list'); c.innerHTML=''; 
     data.drought.forEach((a,i) => { 
-        c.innerHTML+=`
-        <div class="item-list-row">
-            <div>${a.region}</div>
-            <div class="btn-group">
-                <button class="btn-secondary btn-sm" onclick="editDrought(${i})">Edit</button>
-                <button class="btn-warning btn-sm" onclick="archiveDrought(${i})">Archive</button>
-                <button class="btn-danger btn-sm" onclick="data.drought.splice(${i},1);renderDroughtList()">Del</button>
-            </div>
-        </div>`; 
+        c.innerHTML+=`<div class="item-list-row"><div>${a.region} ${a.mapUrl ? '🌄' : ''}</div><div class="btn-group"><button class="btn-secondary btn-sm" onclick="editDrought(${i})">Edit</button><button class="btn-warning btn-sm" onclick="archiveDrought(${i})">Archive</button><button class="btn-danger btn-sm" onclick="data.drought.splice(${i},1);renderDroughtList()">Del</button></div></div>`; 
     }); 
 }
 function editDrought(i) {
     const d = data.drought[i];
-    document.getElementById('dc-reg').value = d.region;
-    document.getElementById('dc-sev').value = d.severity;
-    document.getElementById('dc-rain').value = d.rainPotential;
-    document.getElementById('dc-end').value = d.endDate;
-    document.getElementById('dc-det').value = d.summary;
-    data.drought.splice(i, 1);
-    renderDroughtList();
+    document.getElementById('dc-reg').value = d.region; document.getElementById('dc-sev').value = d.severity; document.getElementById('dc-rain').value = d.rainPotential; document.getElementById('dc-end').value = d.endDate; document.getElementById('dc-det').value = d.summary;
+    data.drought.splice(i, 1); renderDroughtList();
 }
-function archiveDrought(i) {
-    archives.drought.push(data.drought[i]);
-    data.drought.splice(i, 1);
-    renderDroughtList();
-}
+function archiveDrought(i) { archives.drought.push(data.drought[i]); data.drought.splice(i, 1); renderDroughtList(); }
 async function saveDrought() { 
-    await db.ref('sima/drought').set({overview:{title:document.getElementById('dc-title').value, summary:document.getElementById('dc-sum').value}, alerts:data.drought, archive: archives.drought}); toast('Published!'); 
+    toast('Saving...');
+    await db.ref('sima/drought').set({
+        overview: {title: document.getElementById('dc-title').value, summary: document.getElementById('dc-sum').value}, 
+        alerts: data.drought ||[], 
+        archive: archives.drought ||[]
+    }); 
+    toast('Published DroughtCast!'); 
+}
+
+/* --- ALERT GENERATOR FUNCTIONS --- */
+let genCurrentTab = 'rain';
+function switchGenTab(tabId, ev) {
+    genCurrentTab = tabId;
+    document.querySelectorAll('.gen-tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.gen-tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(`gtab-${tabId}`).classList.add('active');
+    ev.target.classList.add('active');
+}
+function setGenNow(elementId) {
+    const now = new Date();
+    const offsetMs = now.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(now.getTime() - offsetMs)).toISOString().slice(0, 16);
+    document.getElementById(elementId).value = localISOTime;
+}
+function addGenDistrict(type) {
+    const container = document.getElementById(`gen-${type}-districts`);
+    const div = document.createElement('div');
+    div.className = 'dynamic-row';
+    div.innerHTML = `<input type="text" placeholder="Area (e.g. Banks Peninsula)" class="district-name"><input type="text" placeholder="Amount (e.g. 50mm)" class="district-amount"><button class="btn-danger" onclick="this.parentElement.remove()">X</button>`;
+    container.appendChild(div);
+}
+function addGenWindDirection() {
+    const container = document.getElementById('gen-gale-winds');
+    const div = document.createElement('div');
+    div.className = 'dynamic-row';
+    div.innerHTML = `<input type="text" placeholder="Direction (e.g. Severe NW)" class="wind-dir"><input type="text" placeholder="Timing" class="wind-time"><button class="btn-danger" onclick="this.parentElement.remove()">X</button>`;
+    container.appendChild(div);
+}
+function formatNZDateObj(dateString) {
+    if (!dateString) return "[Time Not Set]";
+    const d = new Date(dateString);
+    return d.toLocaleString('en-NZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(',', ''); 
+}
+function getGenImpactsText(severity) {
+    switch(severity) {
+        case 'minimal': return "MINIMAL\nExpect low impacts such as isolated surface flooding, minor wind gusts, or slight travel delays. No significant disruption to daily activities is anticipated.";
+        case 'enhanced': return "ENHANCED\nLow to moderate impacts are possible. Localised disruptions, minor flooding, hazardous driving conditions, or isolated power fluctuations may occur. The public is advised to stay informed.";
+        case 'high': return "HIGH\nSignificant impacts are expected. Potential for dangerous driving conditions, road closures, power outages, and damage to trees and minor structures. Residents should take precautions and secure property.";
+        case 'critical': return "CRITICAL\nSevere to catastrophic impacts are likely. Expect widespread disruption, impassable roads, extensive damage to infrastructure, and severe danger to life and property. Immediate action should be taken to ensure safety.";
+        default: return "";
+    }
+}
+function generateStatement() {
+    const regions = document.getElementById('gen-regions').value || "[Regions Not Specified]";
+    const severity = document.getElementById('gen-severity').value;
+    const nextUpdate = document.getElementById('gen-nextUpdate').value;
+    const issueTime = new Date().toISOString(); 
+
+    let output =[];
+    output.push("S P E C I A L   W E A T H E R   S T A T E M E N T\n\n");
+    output.push(`ISSUED:      ${formatNZDateObj(issueTime)}\nNEXT UPDATE: ${formatNZDateObj(nextUpdate)}\n\n`);
+    output.push(`SEVERITY:         ${severity.toUpperCase()}\nREGIONS AFFECTED: ${regions}\n\n-------------------------------------------------------\n\n`);
+
+    if (genCurrentTab === 'rain' || genCurrentTab === 'snow') {
+        const type = genCurrentTab;
+        const start = document.getElementById(`gen-${type}-start`).value;
+        const end = document.getElementById(`gen-${type}-end`).value;
+        const total = document.getElementById(`gen-${type}-total`).value || "[Amount Not Specified]";
+        const onTop = document.getElementById(`gen-${type}-ontop`).checked;
+        const onTopTxt = onTop ? " on top of what has already fallen." : ".";
+        const downpours = document.getElementById(`gen-${type}-downpours`).checked;
+        const thunder = document.getElementById(`gen-${type}-thunder`).checked;
+        const uncertainty = document.getElementById(`gen-${type}-uncertainty`).checked;
+
+        output.push(`THREAT: HEAVY ${type === 'rain' ? 'RAIN' : 'SNOW'}\nVALID:  ${formatNZDateObj(start)}\n        to ${formatNZDateObj(end)}\n\nTOTAL ACCUMULATION:\nExpected ${total}${onTopTxt}`);
+        
+        const distRows = document.querySelectorAll(`#gen-${type}-districts .dynamic-row`);
+        if (distRows.length > 0) {
+            output.push(`\n\nAREA BREAKDOWN:`);
+            distRows.forEach(row => {
+                const name = row.querySelector('.district-name').value || "Unknown Area";
+                const amount = row.querySelector('.district-amount').value || "Amount unspecified";
+                output.push(`\n • ${name}: ${amount}${onTop ? " (on top of what has already fallen)" : ""}`);
+            });
+        }
+        output.push("\n\nCONDITIONS & RISKS:");
+        
+        if (type === 'snow') {
+            const sl = document.getElementById('gen-snow-level').value;
+            const fl = document.getElementById('gen-freezing-level').value;
+            if (sl || fl) output.push(`\n • ${sl ? `Snow level expected ${sl}` : ""}${sl&&fl ? `, with the ` : ""}${fl ? `Freezing level around ${fl}` : ""}.`);
+            if (document.getElementById('gen-snow-blowing').checked) output.push("\n • Blowing snow is possible, which may severely reduce visibility and cause drifting.");
+        }
+        if (downpours || thunder) output.push(`\n • ${(downpours ? ["Downpours"] : []).concat(thunder ? ["Thunderstorms"] :[]).join(" and/or ")} are possible. This may significantly boost ${type === 'rain'?'rainfall':'snowfall'} totals in localised areas.`);
+        
+        if (output[output.length - 1] === "\n\nCONDITIONS & RISKS:") output.push("\n • General standard precautions apply for this weather type.");
+        if (uncertainty) output.push("\n\nFORECAST UNCERTAINTY:\nThere remains some uncertainty regarding the exact track and intensity of this weather system. Accumulations may be updated in subsequent forecasts.");
+        
+    } else if (genCurrentTab === 'gales') {
+        const start = document.getElementById('gen-gale-start').value;
+        const end = document.getElementById('gen-gale-end').value;
+        const peak = document.getElementById('gen-gale-peak').value || "[Peak Gusts Not Specified]";
+        
+        output.push(`THREAT: SEVERE GALES\nVALID:  ${formatNZDateObj(start)}\n        to ${formatNZDateObj(end)}\n\nPEAK WIND GUSTS:\n${peak}`);
+        
+        const wRows = document.querySelectorAll('#gen-gale-winds .dynamic-row');
+        if (wRows.length > 0) {
+            output.push(`\n\nWIND DIRECTION & TIMING:`);
+            wRows.forEach(row => {
+                output.push(`\n • ${row.querySelector('.wind-dir').value || "Unknown Dir"} expected during ${row.querySelector('.wind-time').value || "Unknown Timing"}.`);
+            });
+        }
+        if (document.getElementById('gen-gale-uncertainty').checked) output.push("\n\nFORECAST UNCERTAINTY:\nThere remains some uncertainty regarding the exact track of this system, which may influence the peak wind strength and exact timing of the strongest gusts.");
+    }
+
+    output.push(`\n\n-------------------------------------------------------\n\nPOTENTIAL IMPACTS:\n${getGenImpactsText(severity)}\n\n=======================================================\nDISCLAIMER: MetService is New Zealand's only national \nweather authority. We provide this statement purely as \na second opinion on approaching impactful weather for \nthe South Island.\n=======================================================`);
+    document.getElementById('gen-output').textContent = output.join('');
 }
 
 // --- ROBUST UNIFIED ARCHIVE SYSTEM ---
-let allArchives = [];
-let filteredArchives =[];
+let allArchives =[];
+let filteredArchives = [];
 
 function loadGlobalArchives() {
-    allArchives = []; 
+    allArchives =[]; 
 
-    // 1. Alerts[...(data.alerts||[]), ...(archives.alerts||[])].forEach(i => {
+    // 1. Alerts
+    [...(data.alerts||[]), ...(archives.alerts||[])].forEach(i => {
         if(!i.startTime) return;
         const d = i.startTime.includes('T') ? i.startTime.split('T')[0] : i.startTime;
         allArchives.push({ date: d, type: 'Alert', tag: 'tag-alert', title: i.weatherType, sub: (i.type || 'Warning') + ' - ' + (i.regions || 'General'), text: i.summary, fullData: i });
@@ -820,11 +1024,11 @@ function loadGlobalArchives() {
         allArchives.push({ date: d, type: 'StormCast', tag: 'tag-storm', title: i.title || 'Thunderstorm Risk', sub: 'Convective Outlook', text: i.overallDiscussion, img: i.mapUrl, fullData: i });
     });
 
-    // 3. SnowCast
+    // 3. SnowCast (Now links maps mapped to region)
     [...(data.snow||[]), ...(archives.snow||[])].forEach(i => {
         if(!i.validFrom) return;
         const d = i.validFrom.includes('T') ? i.validFrom.split('T')[0] : i.validFrom;
-        allArchives.push({ date: d, type: 'SnowCast', tag: 'tag-snow', title: i.region + ' (' + (i.riskLevel || 'Risk') + ')', sub: 'Snow Warning', text: i.summary, fullData: i });
+        allArchives.push({ date: d, type: 'SnowCast', tag: 'tag-snow', title: i.region + ' (' + (i.riskLevel || 'Risk') + ')', sub: 'Snow Warning', text: i.summary, img: i.mapUrl, fullData: i });
     });
 
     // 4. Sig Weather[...sigActiveForecasts, ...sigArchiveData].forEach(i => {
@@ -832,10 +1036,10 @@ function loadGlobalArchives() {
         allArchives.push({ date: i.date, type: 'Sig Weather', tag: 'tag-sig', title: 'Outlook: ' + (i.alertLevel || 'General'), sub: 'Significant Weather', text: i.summary, img: i.imageUrl, fullData: i });
     });
 
-    // 5. DroughtCast
+    // 5. DroughtCast (Now links maps mapped to alerts)
     [...(data.drought||[]), ...(archives.drought||[])].forEach(i => {
         if(!i.endDate) return;
-        allArchives.push({ date: i.endDate, type: 'DroughtCast', tag: 'tag-drought', title: i.region, sub: i.severity + ' Risk', text: i.summary, fullData: i });
+        allArchives.push({ date: i.endDate, type: 'DroughtCast', tag: 'tag-drought', title: i.region, sub: i.severity + ' Risk', text: i.summary, img: i.mapUrl, fullData: i });
     });
 
     applyArchFilters();
@@ -850,42 +1054,28 @@ function applyArchFilters() {
     filteredArchives = allArchives.filter(item => {
         if(type !== 'All' && item.type !== type) return false;
         
-        // DATE PARSING ATTEMPT
         let dObj = new Date(item.date);
-        
-        // If basic ISO parsing fails, check for DD/MM/YYYY common in NZ
         if(isNaN(dObj)) {
             const parts = item.date.split(/[-/]/);
-            if(parts.length === 3) {
-                // If first part is day (<=31) and last part is year (>1900)
-                if(parseInt(parts[0]) <= 31 && parseInt(parts[2]) > 1900) {
-                    dObj = new Date(parts[2], parts[1]-1, parts[0]);
-                }
-            }
+            if(parts.length === 3 && parseInt(parts[0]) <= 31 && parseInt(parts[2]) > 1900) dObj = new Date(parts[2], parts[1]-1, parts[0]);
         }
-
-        if(isNaN(dObj)) return true; // Keep weird dates so they at least show up
+        if(isNaN(dObj)) return true; 
         
         if(start && dObj < new Date(start)) return false;
         if(end && dObj > new Date(end)) return false;
         return true;
     });
 
-    // Build Tree
     const tree = {};
     filteredArchives.forEach(item => {
         if(!item.date) return;
-        
         let y, m, d;
         let dObj = new Date(item.date);
         
-        // FIX FOR OLDER DATA FORMATS (e.g. DD/MM/YYYY vs YYYY-MM-DD)
         if(isNaN(dObj)) {
             const parts = item.date.split(/[-/]/);
             if(parts.length >= 3) {
-                // Heuristic: If part[0] is year
                 if(parseInt(parts[0]) > 1900) { y=parts[0]; m=parts[1]; d=parts[2]; }
-                // Heuristic: If part[2] is year (DD/MM/YYYY)
                 else if(parseInt(parts[2]) > 1900) { y=parts[2]; m=parts[1]; d=parts[0]; }
             }
         } else {
@@ -895,8 +1085,6 @@ function applyArchFilters() {
         }
         
         if(!y || !m || !d) return;
-
-        // Clean up strings
         const dStr = String(d).padStart(2,'0');
         const mName = new Date(y, m-1, 1).toLocaleString('default', { month: 'long' });
         
@@ -923,9 +1111,7 @@ function renderArchiveTree(tree, sortDir) {
 
     years.forEach(year => {
         const yDiv = document.createElement('div');
-        yDiv.className = 'tree-year';
-        yDiv.innerText = year;
-        yDiv.onclick = (e) => e.target.classList.toggle('open');
+        yDiv.className = 'tree-year'; yDiv.innerText = year; yDiv.onclick = (e) => e.target.classList.toggle('open');
         root.appendChild(yDiv);
 
         const mCont = document.createElement('div');
@@ -937,9 +1123,7 @@ function renderArchiveTree(tree, sortDir) {
 
         months.forEach(month => {
             const mDiv = document.createElement('div');
-            mDiv.className = 'tree-month';
-            mDiv.innerText = month;
-            mDiv.onclick = (e) => e.target.classList.toggle('open');
+            mDiv.className = 'tree-month'; mDiv.innerText = month; mDiv.onclick = (e) => e.target.classList.toggle('open');
             mCont.appendChild(mDiv);
 
             const dCont = document.createElement('div');
@@ -950,8 +1134,7 @@ function renderArchiveTree(tree, sortDir) {
 
             days.forEach(day => {
                 const dDiv = document.createElement('div');
-                dDiv.className = 'day-item';
-                dDiv.innerText = `${day} ${month}`;
+                dDiv.className = 'day-item'; dDiv.innerText = `${day} ${month}`;
                 dDiv.onclick = () => {
                     document.querySelectorAll('.day-item').forEach(x=>x.classList.remove('selected'));
                     dDiv.classList.add('selected');
@@ -970,14 +1153,11 @@ function renderDayView(items, dateLabel) {
     view.innerHTML = '';
     
     const head = document.createElement('h3');
-    head.style.borderBottom = "1px solid #e5e7eb";
-    head.style.paddingBottom = "10px";
-    head.innerText = `Archives for ${dateLabel}`;
+    head.style.borderBottom = "1px solid #e5e7eb"; head.style.paddingBottom = "10px"; head.innerText = `Archives for ${dateLabel}`;
     view.appendChild(head);
 
     items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'arch-entry';
+        const div = document.createElement('div'); div.className = 'arch-entry';
         const imgHTML = item.img ? `<img src="${item.img}" class="arch-thumb">` : `<div class="arch-thumb" style="display:flex;align-items:center;justify-content:center;font-size:20px;">☁️</div>`;
         div.innerHTML = `${imgHTML}<div class="arch-content"><span class="arch-tag ${item.tag}">${item.type}</span><div style="font-weight:700; margin-bottom:4px;">${item.title}</div><div style="color:#6b7280; font-size:0.9rem;">${item.sub}</div></div>`;
         div.onclick = () => openArchModal(item);
@@ -1007,7 +1187,6 @@ function closeArchModal() {
 
 document.getElementById('am-overlay').addEventListener('click', (e) => { if(e.target === e.currentTarget) closeArchModal(); });
 
-init();
 </script>
 </body>
 </html>
