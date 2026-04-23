@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIMA Admin V39 (Mobile Responsive)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FIREBASE LIBRARIES -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <style>
         :root { 
             --bg-app: #f3f4f6; 
@@ -422,6 +427,21 @@
 <div id="toast">Saved!</div>
 
 <script>
+// --- FIREBASE INITIALIZATION ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDV7t0Cv4_triZN_E3j3CjFjmBdqEZlBas",
+  authDomain: "simaadmin.firebaseapp.com",
+  projectId: "simaadmin",
+  storageBucket: "simaadmin.firebasestorage.app",
+  messagingSenderId: "699189902374",
+  appId: "1:699189902374:web:c1415680b0da63041b7ae7",
+  measurementId: "G-QK6WCKLX47",
+  databaseURL: "https://simaadmin-default-rtdb.firebaseio.com"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 const KEY = '$2a$10$/h3xvps5BAmoU8dJigw8T.qYg3eoESVLwjXbX9aHmb85Y96cExsCe';
 const IMG_KEY = '11bca15e224ed683c68e78cc0013c205';
 const BINS = { alerts:'68db095dae596e708f0072be', storm:'68d8cdac43b1c97be9528f9b', snow:'68e0738e43b1c97be9599eb1', sig:'68d8c3c6d0ea881f408d7a5c', drought:'68d9fc07d0ea881f408e8e5b' };
@@ -432,7 +452,7 @@ const getFresh = (u) => u + '?t=' + Date.now();
 let data = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
 let archives = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
 let sigActiveForecasts = [];
-let sigArchiveData = [];
+let sigArchiveData =[];
 
 // -- UI UTILS --
 function toast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display='block'; setTimeout(()=>t.style.display='none', 3000); }
@@ -458,15 +478,34 @@ function getNZTodayISO() {
 
 // --- CORE INIT (Robust Loading) ---
 async function init() {
-    const fetchBin = (name) => fetch(getFresh(api(name)+'/latest'), {headers:{'X-Master-Key':KEY}}).then(r=>r.json()).catch(e => ({record:{}}));
+    const fetchFB = (name) => {
+        return new Promise(resolve => {
+            db.ref('sima/' + name).once('value', async snap => {
+                let val = snap.val();
+                
+                // If Firebase has nothing, migrate from JSONBin instantly!
+                if (!val) {
+                    console.log(`Migrating ${name} data from JSONBin...`);
+                    try {
+                        const r = await fetch(getFresh(api(name)+'/latest'), {headers:{'X-Master-Key':KEY}});
+                        const j = await r.json();
+                        val = j.record;
+                        if(val) await db.ref('sima/' + name).set(val);
+                    } catch(e) { val = {}; }
+                }
+                
+                resolve({ record: val || {} });
+            });
+        });
+    };
 
-    const [alertRes, stormRes, snowRes, sigRes, droughtRes] = await Promise.all([
-        fetchBin('alerts'), fetchBin('storm'), fetchBin('snow'), fetchBin('sig'), fetchBin('drought')
+    const[alertRes, stormRes, snowRes, sigRes, droughtRes] = await Promise.all([
+        fetchFB('alerts'), fetchFB('storm'), fetchFB('snow'), fetchFB('sig'), fetchFB('drought')
     ]);
 
     // 1. ALERTS
-    data.alerts = alertRes.record.blocks || [];
-    archives.alerts = alertRes.record.archive || [];
+    data.alerts = alertRes.record.blocks ||[];
+    archives.alerts = alertRes.record.archive ||[];
     if(alertRes.record.globalInfo) {
         document.getElementById('ag-title').value = alertRes.record.globalInfo.title||'';
         document.getElementById('ag-over').value = alertRes.record.globalInfo.overview||'';
@@ -475,19 +514,19 @@ async function init() {
 
     // 2. STORMCAST
     data.storm = stormRes.record.outlooks || [];
-    archives.storm = stormRes.record.archive || [];
+    archives.storm = stormRes.record.archive ||[];
     renderStormList();
 
     // 3. SNOWCAST
-    data.snow = snowRes.record.forecasts || [];
-    archives.snow = snowRes.record.archive || [];
+    data.snow = snowRes.record.forecasts ||[];
+    archives.snow = snowRes.record.archive ||[];
     document.getElementById('sc-title').value = snowRes.record.mainTitle||'';
     document.getElementById('sc-over').value = snowRes.record.overview||'';
     renderSnowList();
 
     // 4. DROUGHT
-    data.drought = droughtRes.record.alerts || [];
-    archives.drought = droughtRes.record.archive || [];
+    data.drought = droughtRes.record.alerts ||[];
+    archives.drought = droughtRes.record.archive ||[];
     if(droughtRes.record.overview) {
         document.getElementById('dc-title').value = droughtRes.record.overview.title||'';
         document.getElementById('dc-sum').value = droughtRes.record.overview.summary||'';
@@ -501,7 +540,7 @@ async function init() {
     
     // FIX: Trust 'forecasts' list from DB first so active days don't disappear
     sigActiveForecasts = [...(sd.forecasts || [])];
-    sigArchiveData = [];
+    sigArchiveData =[];
     
     const todayNZ = getNZTodayISO();
     const rawArchive = [...(sd.archive || [])];
@@ -517,8 +556,8 @@ async function init() {
     });
 
     // Remove duplicates
-    sigActiveForecasts = [...new Map(sigActiveForecasts.map(item => [item.id || item.date, item])).values()];
-    sigArchiveData = [...new Map(sigArchiveData.map(item => [item.id || item.date, item])).values()];
+    sigActiveForecasts =[...new Map(sigActiveForecasts.map(item => [item.id || item.date, item])).values()];
+    sigArchiveData = [...new Map(sigArchiveData.map(item =>[item.id || item.date, item])).values()];
 
     sigActiveForecasts.sort((a, b) => new Date(a.date) - new Date(b.date));
     
@@ -566,7 +605,7 @@ function stageAlert() {
     renderAlerts(); document.getElementById('ag-reg').value = ''; document.getElementById('ag-det').value = '';
 }
 async function saveAlerts() {
-    toast('Saving...'); await fetch(api('alerts'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value }, blocks: data.alerts, archive: archives.alerts})}); toast('Published!');
+    toast('Saving...'); await db.ref('sima/alerts').set({globalInfo: { title: document.getElementById('ag-title').value, overview: document.getElementById('ag-over').value }, blocks: data.alerts, archive: archives.alerts}); toast('Published!');
 }
 
 /* --- STORMCAST FUNCTIONS --- */
@@ -651,14 +690,14 @@ function editStorm(i) {
     document.getElementById('stc-end').value = s.validUntil;
     document.getElementById('stc-over').value = s.overallDiscussion;
     document.getElementById('stc-regions').innerHTML = '';
-    (s.regionalForecasts || []).forEach(r => {
+    (s.regionalForecasts ||[]).forEach(r => {
         addStcRegionUI();
         const el = document.getElementById('stc-regions').lastElementChild;
         el.querySelector('.r-name').value = r.regionName;
         el.querySelector('.r-lvl').value = r.riskLevel;
         el.querySelector('.r-det').value = r.threats;
         el.querySelector('.r-time').value = r.timeframe || '';
-        (r.risks || []).forEach(val => {
+        (r.risks ||[]).forEach(val => {
             const cb = el.querySelector(`input[value="${val}"]`);
             if(cb) cb.checked = true;
         });
@@ -672,7 +711,7 @@ function archiveStorm(i) {
     data.storm.splice(i, 1);
     renderStormList();
 }
-async function saveStorm() { await fetch(api('storm'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({outlooks:data.storm, archive:archives.storm})}); toast('Published!'); }
+async function saveStorm() { await db.ref('sima/storm').set({outlooks:data.storm, archive:archives.storm}); toast('Published!'); }
 
 function addSnowRegion() { data.snow.push({region: document.getElementById('sc-reg-name').value, riskLevel: document.getElementById('sc-reg-risk').value, validFrom: document.getElementById('sc-start').value, validTo: document.getElementById('sc-end').value, summary: document.getElementById('sc-reg-sum').value}); renderSnowList(); }
 function renderSnowList() { 
@@ -704,7 +743,7 @@ function archiveSnow(i) {
     data.snow.splice(i, 1);
     renderSnowList();
 }
-async function saveSnow() { await fetch(api('snow'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({mainTitle:document.getElementById('sc-title').value, overview:document.getElementById('sc-over').value, forecasts:data.snow, archive:archives.snow})}); toast('Published!'); }
+async function saveSnow() { await db.ref('sima/snow').set({mainTitle:document.getElementById('sc-title').value, overview:document.getElementById('sc-over').value, forecasts:data.snow, archive:archives.snow}); toast('Published!'); }
 
 function createSigEntryElement(entryData = {}) {
     const id = entryData.id || `entry-${Date.now()}-${Math.random()}`; const container = document.getElementById('swo-entries-container'); const div = document.createElement('div'); div.className = 'daily-forecast-card'; div.setAttribute('data-id', id);
@@ -723,7 +762,7 @@ async function saveSigWeather(isSilent = false) {
         return { id: entry.getAttribute('data-id'), date: entry.querySelector('.forecast-date').value, summary: entry.querySelector('.forecast-summary').value, alertLevel: entry.querySelector('.forecast-alert-level').value, imageUrl: url };
     });
     const newForecasts = (await Promise.all(promises)).filter(f => f.date);
-    await fetch(api('sig'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({overallTitle: document.getElementById('swo-overallTitle').value, overallSummary: document.getElementById('swo-overallSummary').value, forecasts: newForecasts, archive: sigArchiveData})});
+    await db.ref('sima/sig').set({overallTitle: document.getElementById('swo-overallTitle').value, overallSummary: document.getElementById('swo-overallSummary').value, forecasts: newForecasts, archive: sigArchiveData});
     if(!isSilent) { toast('Published!'); }
 }
 
@@ -758,18 +797,17 @@ function archiveDrought(i) {
     renderDroughtList();
 }
 async function saveDrought() { 
-    await fetch(api('drought'), {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':KEY}, body:JSON.stringify({overview:{title:document.getElementById('dc-title').value, summary:document.getElementById('dc-sum').value}, alerts:data.drought, archive: archives.drought})}); toast('Published!'); 
+    await db.ref('sima/drought').set({overview:{title:document.getElementById('dc-title').value, summary:document.getElementById('dc-sum').value}, alerts:data.drought, archive: archives.drought}); toast('Published!'); 
 }
 
 // --- ROBUST UNIFIED ARCHIVE SYSTEM ---
 let allArchives = [];
-let filteredArchives = [];
+let filteredArchives =[];
 
 function loadGlobalArchives() {
     allArchives = []; 
 
-    // 1. Alerts
-    [...(data.alerts||[]), ...(archives.alerts||[])].forEach(i => {
+    // 1. Alerts[...(data.alerts||[]), ...(archives.alerts||[])].forEach(i => {
         if(!i.startTime) return;
         const d = i.startTime.includes('T') ? i.startTime.split('T')[0] : i.startTime;
         allArchives.push({ date: d, type: 'Alert', tag: 'tag-alert', title: i.weatherType, sub: (i.type || 'Warning') + ' - ' + (i.regions || 'General'), text: i.summary, fullData: i });
@@ -789,8 +827,7 @@ function loadGlobalArchives() {
         allArchives.push({ date: d, type: 'SnowCast', tag: 'tag-snow', title: i.region + ' (' + (i.riskLevel || 'Risk') + ')', sub: 'Snow Warning', text: i.summary, fullData: i });
     });
 
-    // 4. Sig Weather
-    [...sigActiveForecasts, ...sigArchiveData].forEach(i => {
+    // 4. Sig Weather[...sigActiveForecasts, ...sigArchiveData].forEach(i => {
         if(!i.date) return;
         allArchives.push({ date: i.date, type: 'Sig Weather', tag: 'tag-sig', title: 'Outlook: ' + (i.alertLevel || 'General'), sub: 'Significant Weather', text: i.summary, img: i.imageUrl, fullData: i });
     });
@@ -894,7 +931,7 @@ function renderArchiveTree(tree, sortDir) {
         const mCont = document.createElement('div');
         mCont.className = 'month-container';
         
-        const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const monthOrder =["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         let months = Object.keys(tree[year]).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
         if(sortDir === 'desc') months.reverse();
 
