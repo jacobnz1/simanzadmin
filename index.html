@@ -422,7 +422,11 @@
 <div id="toast">Saved!</div>
 
 <script>
-window.saveDataToFirebase(appState);
+const KEY = '$2a$10$/h3xvps5BAmoU8dJigw8T.qYg3eoESVLwjXbX9aHmb85Y96cExsCe';
+const IMG_KEY = '11bca15e224ed683c68e78cc0013c205';
+const BINS = { alerts:'68db095dae596e708f0072be', storm:'68d8cdac43b1c97be9528f9b', snow:'68e0738e43b1c97be9599eb1', sig:'68d8c3c6d0ea881f408d7a5c', drought:'68d9fc07d0ea881f408e8e5b' };
+const api = (b) => `https://api.jsonbin.io/v3/b/${BINS[b]}`;
+const getFresh = (u) => u + '?t=' + Date.now();
 
 // STATE
 let data = { alerts:[], storm:[], snow:[], sig:[], drought:[] };
@@ -967,59 +971,6 @@ function closeArchModal() {
 document.getElementById('am-overlay').addEventListener('click', (e) => { if(e.target === e.currentTarget) closeArchModal(); });
 
 init();
-</script>
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDV7t0Cv4_triZN_E3j3CjFjmBdqEZlBas",
-      authDomain: "simaadmin.firebaseapp.com",
-      databaseURL: "https://simaadmin-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "simaadmin",
-      storageBucket: "simaadmin.firebasestorage.app",
-      messagingSenderId: "699189902374",
-      appId: "1:699189902374:web:c1415680b0da63041b7ae7",
-      measurementId: "G-QK6WCKLX47"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // REPLACE your old saveDataToFirebase with this:
-window.saveDataToFirebase = async function(dataObject) {
-    try {
-        // We add { merge: true } so updating one tab doesn't delete the others
-        await setDoc(doc(db, "admin_data", "settings"), dataObject, { merge: true });
-        
-        if (typeof showToast === "function") showToast("Saved & Propagated to Site!");
-        console.log("Firebase sync successful.");
-    } catch (error) {
-        console.error("Firebase Save Error:", error);
-        if (typeof showToast === "function") showToast("Error saving! Check connection.");
-    }
-};
-
-    window.loadDataFromFirebase = async function() {
-        try {
-            const docSnap = await getDoc(doc(db, "admin_data", "settings"));
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                
-                // IMPORTANT: This replaces your JSONBIN data assignment.
-                // Assuming your global variable is called 'appState' or similar:
-                if (typeof window.populateUI === "function") {
-                    window.populateUI(data); // If you have a specific UI function
-                } else {
-                    window.appState = data;  // Change 'appState' if your main variable is named something else
-                    console.log("Firebase data loaded globally.");
-                }
-                if (typeof showToast === "function") showToast("Data loaded from Firebase!");
-            }
-        } catch (error) {
-            console.error("Firebase Load Error:", error);
-        }
-    };
 </script>
 </body>
 </html>
