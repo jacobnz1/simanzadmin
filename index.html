@@ -986,17 +986,19 @@ init();
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Make functions global so your other scripts can use them
-    window.saveDataToFirebase = async function(dataObject) {
-        try {
-            await setDoc(doc(db, "admin_data", "settings"), dataObject);
-            if (typeof showToast === "function") showToast("Successfully saved to Firebase!");
-            console.log("Firebase save successful.");
-        } catch (error) {
-            console.error("Firebase Save Error:", error);
-            if (typeof showToast === "function") showToast("Error saving to Firebase!");
-        }
-    };
+    // REPLACE your old saveDataToFirebase with this:
+window.saveDataToFirebase = async function(dataObject) {
+    try {
+        // We add { merge: true } so updating one tab doesn't delete the others
+        await setDoc(doc(db, "admin_data", "settings"), dataObject, { merge: true });
+        
+        if (typeof showToast === "function") showToast("Saved & Propagated to Site!");
+        console.log("Firebase sync successful.");
+    } catch (error) {
+        console.error("Firebase Save Error:", error);
+        if (typeof showToast === "function") showToast("Error saving! Check connection.");
+    }
+};
 
     window.loadDataFromFirebase = async function() {
         try {
