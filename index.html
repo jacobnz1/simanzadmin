@@ -1,55 +1,508 @@
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+// Add the Firebase SDK imports at the top
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDV7t0Cv4_triZN_E3j3CjFjmBdqEZlBas",
-      authDomain: "simaadmin.firebaseapp.com",
-      databaseURL: "https://simaadmin-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "simaadmin",
-      storageBucket: "simaadmin.firebasestorage.app",
-      messagingSenderId: "699189902374",
-      appId: "1:699189902374:web:c1415680b0da63041b7ae7",
-      measurementId: "G-QK6WCKLX47"
-    };
+// Your standard Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyDV7t0Cv4_triZN_E3j3CjFjmBdqEZlBas",
+  authDomain: "simaadmin.firebaseapp.com",
+  projectId: "simaadmin",
+  storageBucket: "simaadmin.firebasestorage.app",
+  messagingSenderId: "699189902374",
+  appId: "1:699189902374:web:c1415680b0da63041b7ae7",
+  measurementId: "G-QK6WCKLX47"
+};
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+// Initialize the Firebase app and database connection
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
 
-    // 1. Firebase Save Logic
-    window.saveDataToFirebase = async function(dataObject) {
-        try {
-            await setDoc(doc(db, "admin_data", "settings"), dataObject);
-            if (typeof showToast === "function") showToast("Successfully saved to Firebase!");
-            console.log("Firebase save successful.");
-        } catch (error) {
-            console.error("Firebase Save Error:", error);
-            if (typeof showToast === "function") showToast("Error saving to Firebase! Check console.");
+// Utility to handle strict desktop date parsing
+function safeDate(str) {
+    if (!str) return new Date();
+    const cleanStr = str.replace(' ', 'T');
+    const d = new Date(cleanStr);
+    return isNaN(d.getTime()) ? new Date() : d;
+}
+
+// -------------------------------------------------------------------------
+// Standardized Meteo Engine
+// -------------------------------------------------------------------------
+function interpretForecast(code, mm, pop) {
+    const isShowers = [80, 81, 82, 61].includes(code);
+    const isRain = [63, 65].includes(code);
+    const isDrizzle =[51, 53, 55].includes(code);
+    const isThunder = (code >= 95);
+    const isSnow = [71, 73, 75].includes(code);
+
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+    if (mm === 0) {
+        if (code <= 1) {
+            return pick([
+                "Fine and sunny with light winds throughout the day.",
+                "Clear skies and a bright day with minimal cloud.",
+                "Fine conditions with high cloud clearing to a sunny afternoon.",
+                "Abundant sunshine with light sea breezes developing.",
+                "A blue-dome day with light winds and clear skies.",
+                "Mainly sunny with only a few wisps of high cloud."
+            ]);
         }
-    };
+        if (code === 2) {
+            return pick([
+                "Mainly fine, with a few intervals of high cloud drifting through.",
+                "Fine spells with morning cloud breaking to a sunny afternoon.",
+                "Mostly sunny, though afternoon cloud periods are possible.",
+                "Mainly fine with up to three-quarters cloud cover at times.",
+                "A mix of sun and cloud, remaining predominantly fine.",
+                "Fine morning followed by some afternoon cloud build-up.",
+                "Mainly fine with high cloud increasing towards the evening.",
+                "Partly cloudy skies with long sunny intervals."
+            ]);
+        }
+        return pick([
+            "A predominantly cloudy day, though staying dry with light winds.",
+            "Overcast skies with low cloud breaking for brief sunny intervals.",
+            "Often cloudy with high-level overcast conditions prevailing.",
+            "Cloudy periods throughout the day, remaining dry.",
+            "Mostly cloudy with light winds and occasional misty patches.",
+            "A grey, overcast day with minimal sun breaks.",
+            "Persistent cloud cover with only short fine spells possible.",
+            "Cloudy with morning fog or mist clearing to overcast skies."
+        ]);
+    }
+    if (mm < 1) {
+        if (pop < 30) return "Predominantly fine, though a stray light shower cannot be ruled out.";
+        if (isDrizzle) return pick([
+            "Often cloudy with patches of light morning drizzle, clearing later.",
+            "Dull and grey with intermittent drizzle and misty intervals.",
+            "Cloudy with patches of light drizzle, mainly near the coast.",
+            "Overcast with periods of light drizzle and low cloud.",
+            "Misty morning with drizzle clearing to a cloudy afternoon."
+        ]);
+        return pick([
+            "Mainly fine intervals, interrupted by the occasional brief light shower.",
+            "Cloudy periods with a few light showers, clearing later.",
+            "Variable cloud with a mix of sun and isolated light showers.",
+            "Mostly fine, but with brief light showers passing through.",
+            "Cloudy spells with a few scattered light showers possible."
+        ]);
+    }
 
-    // 2. Firebase Auto-Load Logic
-    window.addEventListener('DOMContentLoaded', async () => {
+    if (isSnow) {
+        return pick([
+            "Cold with periods of snow falling to low levels.", "Frequent snow showers with cold southwesterly winds.", "Overcast and cold with intermittent light snow.", "Morning snow flurries clearing to a very cold afternoon.", "Snow showers developing, potentially heavy on higher ground.", "A mix of sleet and snow showers with cold temperatures.", "Cloudy with periods of snow and light winds.", "Wintry showers of snow or sleet occurring at times.", "Cold and overcast with light snow flurries.", "Occasional snow showers with sunny intervals between.", "Sleet turning to snow during the morning, easing later.", "Snow showers becoming frequent in the afternoon.", "Cold southerlies bringing periods of light to moderate snow.", "Snow falling to low levels, clearing to a few flurries.", "Intermittent sleet and snow with very cold conditions.", "Cold and wintry with scattered snow showers.", "Snow developing during the morning, easing by evening.", "Cloudy spells with a few cold snow showers passing through.", "Periods of light snow with accumulations on high ground.", "A very cold day with occasional snow and sleet flurries."
+        ]);
+    }
+
+    if (mm >= 1 && mm < 10) {
+        if (isThunder) return "Unsettled with cloudy periods and a few isolated thundery showers.";
+        if (isShowers) return pick([
+            "Cloudy periods with scattered showers, becoming more frequent in the afternoon.", "Showers, some possibly heavy, with sunny spells between.", "Brief heavy showers passing through, clearing to sun at times.", "A mix of sun and cloud with frequent passing showers.", "Morning showers clearing to a mix of sun and scattered showers.", "Showers developing mid-morning and continuing through the day.", "Cloudy with showers occurring at intervals.", "Intermittent showers with fresh winds.", "Fine spells interrupted by occasional brief showers.", "Showers becoming frequent for a time in the afternoon.", "Variable cloud with scattered showers throughout the region.", "Showers clearing for a time, then returning in the evening.", "A mostly cloudy day with frequent light to moderate showers.", "Passing showers with long sunny intervals between.", "Showers developing with light sea breezes.", "Expect unsettled conditions with scattered showers.", "Showers, clearing to a mainly fine evening.", "Cloudy with showers, some occasionally heavy.", "A few showers passing through, mainly about the coast.", "Scattered showers with variable cloud cover."
+        ]);
+        if (isRain) return pick([
+            "A mostly overcast day with periods of light to moderate rain.", "Overcast with rain at times, easing to showers later.", "Rain developing in the morning and persisting through the day.", "Cloudy with periods of steady rain, easing by evening.", "Dull and wet with intermittent light to moderate rain.", "Rain, heavy at times, clearing to a few showers.", "Overcast skies with rain falling throughout the region.", "Steady rain throughout the morning, becoming patchy later.", "A wet day with periods of rain and light winds.", "Rain becoming persistent for a time during the afternoon.", "Overcast with rain, clearing to a few late showers.", "Rain developing and becoming steady by midday.", "Periods of rain with overcast conditions prevailing.", "A damp day with persistent light rain.", "Rain at intervals, occasionally moderate in intensity.", "Cloudy with rain, easing to drizzle later in the day.", "Overcast with steady rain throughout the region.", "Rain developing early and continuing into the night.", "Expect a wet day with persistent light to moderate rain.", "Rain at times, with clouds remaining for the day."
+        ]);
+        return "Expect cloudy conditions with a few showers passing through at times.";
+    }
+
+    if (mm >= 10 && mm < 30) {
+        if (isShowers) return pick([
+            "An overcast day with frequent showers, some potentially moderate.", "Frequent heavy showers with limited sunny breaks.", "Showers becoming frequent and heavy during the afternoon.", "Periods of heavy showers with fresh southwesterly winds.", "Cloudy with frequent showers, some moderate to heavy.", "Numerous showers passing through, clearing only late.", "A wet and unsettled day with frequent heavy showers.", "Showers, some thundery, becoming frequent mid-day.", "Heavy showers occurring at intervals throughout the day.", "Overcast with frequent and occasionally heavy showers."
+        ]);
+        if (isRain) return pick([
+            "A wet day expected with persistent periods of moderate rain.", "Steady rain throughout the day, heavy at times.", "Overcast and wet with persistent rain across the region.", "Rain becoming heavy for a time in the afternoon.", "A very wet day with persistent light to moderate rain.", "Rain continuing throughout the day with fresh winds.", "Steady rain developing early and persisting.", "Overcast with rain, heavy falls possible.", "Rain throughout the morning, easing slightly later.", "Persistent moderate rain with overcast skies."
+        ]);
+        return "Cloudy with rain developing, clearing to a few showers late in the day.";
+    }
+    if (mm >= 30 && mm < 75) {
+        if (isThunder) return "Very unsettled conditions with thundery rain and heavy falls possible.";
+        return "Overcast and wet with persistent rain; heavy falls are possible during the day.";
+    }
+    if (mm >= 75) return "An extremely wet day with periods of heavy rain throughout the region.";
+    return "Variable cloud cover with a mix of sun and scattered showers.";
+}
+
+function getIcon(code) {
+    if (code <= 1) return "☀️";
+    if (code === 2) return "🌤️";
+    if (code === 3) return "☁️";
+    if ([45, 48].includes(code)) return "🌫️";
+    if ([51, 53, 55, 61, 80].includes(code)) return "🌦️";
+    if ([63, 65, 81, 82].includes(code)) return "🌧️";
+    if ([71, 73, 75].includes(code)) return "🌨️";
+    if (code >= 95) return "⛈️";
+    return "⛅";
+}
+
+// -------------------------------------------------------------------------
+// Blogger News Engine
+// -------------------------------------------------------------------------
+window.handleBloggerData = function(json) {
+    if(json && json.feed && json.feed.entry) {
+        app.newsCache = json.feed.entry.map(e => {
+            const content = e.content ? e.content.$t : (e.summary ? e.summary.$t : '');
+            let imgUrl = 'logo.png';
+            const imgMatch = content.match(/src="([^"]+)"/);
+            if(imgMatch && imgMatch[1]) imgUrl = imgMatch[1];
+            else if (e.media$thumbnail && e.media$thumbnail.url) imgUrl = e.media$thumbnail.url;
+            if(imgUrl.includes('googleusercontent.com') || imgUrl.includes('blogspot.com')) {
+                imgUrl = imgUrl.replace(/\/s\d+(-c)?\//, '/s1600/').replace(/\/w\d+-h\d+(-c)?\//, '/s1600/');
+            }
+            return { title: e.title.$t, pubDate: e.published.$t, description: content, image: imgUrl, slug: e.title.$t.replace(/[^a-z0-9]+/gi, '-').toLowerCase() };
+        });
+        if(document.getElementById('home-news-feed')) app.renderNewsFeeds();
+        if(document.getElementById('news-feed')) app.renderNewsFeeds();
+        const params = new URLSearchParams(window.location.search);
+        const slug = params.get('slug');
+        if(slug && document.getElementById('reader-content')) app.renderArticle(slug);
+        
+        const loader = document.getElementById('page-loader');
+        if(loader) loader.style.display = 'none';
+    }
+};
+
+const app = {
+    newsCache:[], sessionData: {},
+    init: async (pageType) => {
+        document.body.childNodes.forEach(node => {
+            if (node.nodeType === 3 && node.nodeValue.trim().includes('Loading Forecasts')) node.remove();
+        });
+        const placeholders =['home-news-feed', 'news-feed', 'alerts-feed', 'storm-feed', 'snow-feed', 'outlook-container', 'dc-feed'];
+        placeholders.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
         try {
-            const docSnap = await getDoc(doc(db, "admin_data", "settings"));
-            if (docSnap.exists()) {
-                const data = docSnap.data();
+            const activeBins = ['alerts', 'storm', 'snow', 'sig'];
+            if(pageType === 'drought') activeBins.push('drought');
+            await app.loadSpecificData(activeBins);
+            app.checkGlobalStatus();
+            if(pageType === 'home') { siWidget.init(); app.fetchNews(); }
+            else if(pageType === 'alerts') app.renderAlerts();
+            else if(pageType === 'storm') app.renderStorm();
+            else if(pageType === 'snow') app.renderSnow();
+            else if(pageType === 'outlook') app.renderSig();
+            else if(pageType === 'drought') app.renderDrought();
+            else if(pageType === 'news' || pageType === 'article') app.fetchNews();
+            else if(pageType === 'radar') customRadar.init();
+            app.reloadAds();
+            
+            if(pageType !== 'home') {
+                 const loader = document.getElementById('page-loader');
+                 if(loader) setTimeout(() => loader.style.display = 'none', 1000);
+            }
+        } catch (e) { console.error("Init Error", e); }
+    },
+    
+    // UPDATED FIREBASE FIRESTORE DATA FETCHING
+    loadSpecificData: async (keys) => {
+        const CACHE_TIME = 1 * 60 * 1000; 
+        const now = Date.now();
+        const cacheKey = 'sima_forecast_cache';
+        
+        let allData = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
+        
+        if (!allData || (now - allData.timestamp > CACHE_TIME)) {
+            try {
+                // Fetching from Firestore matching the Admin Panel save location
+                const docSnap = await getDoc(doc(db, "admin_data", "settings"));
                 
-                // IMPORTANT: Send the loaded data to your existing UI population function.
-                // Replace 'window.populateUI(data)' with whatever function you currently use 
-                // in index (33).html to render the tables after JSONBIN loads.
-                if (typeof window.populateUI === "function") {
-                    window.populateUI(data);
+                if (docSnap.exists()) {
+                    allData = { timestamp: now, data: docSnap.data() };
                 } else {
-                    console.warn("Please link your UI render function here.");
+                    console.warn("No data found in Firestore admin_data/settings!");
+                    allData = { timestamp: now, data: {} };
                 }
                 
-                if (typeof showToast === "function") showToast("Data loaded from Firebase!");
-            } else {
-                console.log("No existing settings document found in Firebase.");
+                sessionStorage.setItem(cacheKey, JSON.stringify(allData));
+            } catch (e) {
+                console.error("Firestore fetch error:", e);
+                allData = { timestamp: now, data: {} };
             }
-        } catch (error) {
-            console.error("Firebase Load Error:", error);
         }
-    });
-</script>
+        
+        keys.forEach(k => { 
+            app.sessionData[k] = allData.data[k] || {}; 
+        });
+    },
+    
+    reloadAds: () => {
+        const wrappers = document.querySelectorAll('.ad-wrapper');
+        wrappers.forEach(w => {
+            w.innerHTML = '<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8263002259646510" data-ad-slot="6422250767" data-ad-format="auto" data-full-width-responsive="true"></ins>';
+            try { (window.adsbygoogle = window.adsbygoogle ||[]).push({}); } catch (e) {}
+        });
+    },
+    checkGlobalStatus: () => {
+        const d = app.sessionData;
+        const now = new Date();
+        let activeLinks =[];
+
+        if(d.alerts?.blocks) {
+            const activeAlerts = d.alerts.blocks.filter(b => safeDate(b.endTime) > now);
+            if(activeAlerts.length > 0) {
+                activeLinks.push(`<a href="https://www.sima.co.nz/alerts" style="color:white;text-decoration:none;">Weather Alerts Issued</a>`);
+            }
+        }
+
+        if(d.storm?.outlooks) {
+            const activeStorms = d.storm.outlooks.filter(o => safeDate(o.validUntil) > now);
+            if(activeStorms.length > 0) {
+                activeLinks.push(`<a href="https://www.sima.co.nz/stormcast" style="color:white;text-decoration:none;">StormCast Issued</a>`);
+            }
+        }
+
+        if(d.snow?.forecasts) {
+            const activeSnow = d.snow.forecasts.filter(f => safeDate(f.validTo) > now);
+            if(activeSnow.length > 0) {
+                activeLinks.push(`<a href="https://www.sima.co.nz/snowcast" style="color:white;text-decoration:none;">SnowCast Issued</a>`);
+            }
+        }
+
+        if(d.sig?.forecasts) {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const isCritical = d.sig.forecasts.some(f => f.alertLevel === 'Critical' && safeDate(f.date) >= today);
+            if(isCritical) {
+                activeLinks.push(`<a href="https://www.sima.co.nz/alerts" style="color:white;text-decoration:none;">Critical Risk Issued</a>`);
+            }
+        }
+
+        const banner = document.getElementById('alert-banner');
+        if (banner) {
+            if (activeLinks.length > 0) {
+                banner.innerHTML = "⚠️ Active: " + activeLinks.join(" | ");
+                banner.style.display = 'block';
+                document.body.classList.add('has-alert');
+            } else {
+                banner.style.display = 'none';
+                document.body.classList.remove('has-alert');
+            }
+        }
+    },
+    renderAlerts: () => {
+        const d = app.sessionData.alerts;
+        const container = document.getElementById('alerts-feed');
+        if(!d || !container) return;
+
+        if(document.getElementById('alerts-overview')) document.getElementById('alerts-overview').innerText = d.globalInfo?.overview || "No active warnings.";
+
+        const active = (d.blocks||[]).filter(b => safeDate(b.endTime) > new Date()).sort((a,b) => safeDate(a.endTime) - safeDate(b.endTime));
+        container.innerHTML = active.map(b => {
+            const riskClass = b.type.includes("Special") ? "Special" : b.type.split(' ')[0];
+            return `
+            <div class="feed-item-card border-${riskClass}">
+                <div class="feed-head"><strong>${b.weatherType}</strong><span class="badge bg-${riskClass}">${b.type}</span></div>
+                <div class="feed-body">
+                    <p><strong>Areas:</strong> ${Array.isArray(b.regions) ? b.regions.join(', ') : b.regions}</p>
+                    <p style="margin: 10px 0;">${b.summary}</p>
+                    <div style="font-size:0.8rem; color:var(--secondary); font-weight:700;">Valid: ${new Date(safeDate(b.startTime)).toLocaleString()} to ${new Date(safeDate(b.endTime)).toLocaleString()}</div>
+                </div>
+            </div>`;
+        }).join('') || '<div style="text-align:center; padding:50px;">No active alerts.</div>';
+    },
+    renderSig: () => {
+        const d = app.sessionData.sig;
+        const container = document.getElementById('outlook-container');
+        if(!d || !container) return;
+
+        if(document.getElementById('swo-main-title')) document.getElementById('swo-main-title').innerText = d.overallTitle || "Significant Weather Outlook";
+        if(document.getElementById('swo-summary')) document.getElementById('swo-summary').innerText = d.overallSummary || "";
+
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        const active = (d.forecasts||[]).filter(f => safeDate(f.date) >= now).sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+        container.innerHTML = active.map(f => `
+            <div class="feed-item-card border-${f.alertLevel || 'None'}">
+                <div class="feed-content-wrapper">
+                    ${f.imageUrl ? `<div class="feed-img-wrapper"><img src="${f.imageUrl}" class="map-img" onclick="window.open(this.src)"></div>` : ''}
+                    <div class="feed-text-wrapper">
+                        <h3 style="margin-bottom:10px;">${new Date(f.date).toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'})}</h3>
+                        <p style="white-space:pre-line;">${f.summary}</p>
+                        ${f.alertLevel && f.alertLevel !== 'None' ? `<div style="margin-top:15px;"><span class="badge bg-${f.alertLevel}">${f.alertLevel} Risk</span></div>` : ''}
+                    </div>
+                </div>
+            </div>`).join('') || '<div style="text-align:center; padding:40px;">No outlooks issued.</div>';
+    },
+    renderStorm: () => {
+        const d = app.sessionData.storm;
+        const c = document.getElementById('storm-feed');
+        if(!d || !c) return;
+        const active = (d.outlooks||[]).filter(o => safeDate(o.validUntil) > new Date());
+        c.innerHTML = active.map(o => `
+            <div class="feed-item-card">
+                <div class="feed-content-wrapper">
+                    ${(o.mapUrl || o.imageUrl) ? `<div class="feed-img-wrapper"><img src="${o.mapUrl || o.imageUrl}" class="map-img" onclick="window.open(this.src)"></div>` : ''}
+                    <div class="feed-text-wrapper">
+                        <h2 style="font-size:1.6rem; color:var(--primary); margin-bottom:5px;">${o.title}</h2>
+                        <div style="margin-bottom:15px; font-size:0.9rem; color:var(--secondary); font-weight:600;">Valid: ${new Date(safeDate(o.validFrom)).toLocaleString()} to ${new Date(safeDate(o.validUntil)).toLocaleString()}</div>
+                        <p style="white-space:pre-line; margin-bottom:20px;">${o.overallDiscussion}</p>
+                        <div class="storm-regions-grid">
+                            ${(o.regionalForecasts ||[]).map(r => `
+                                <div class="storm-region-card border-${r.riskLevel}">
+                                    <div style="font-weight:800;">${r.regionName}</div>
+                                    <div style="font-size:0.75rem; color:var(--secondary); font-weight:700;">${r.riskLevel} Risk • ${r.timeframe}</div>
+                                    ${r.risks && r.risks.length ? `<div style="margin: 8px 0; display: flex; flex-wrap: wrap; gap: 5px;">${r.risks.map(risk => `<span style="background:var(--border); font-size:10px; padding:2px 6px; border-radius:4px; font-weight:700; text-transform:uppercase;">${risk}</span>`).join('')}</div>` : ''}
+                                    <div style="font-size:0.85rem; margin-top:10px;">${r.threats}</div>
+                                </div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>`).join('');
+    },
+    renderSnow: () => {
+        const d = app.sessionData.snow;
+        const c = document.getElementById('snow-feed');
+        if(!d || !c) return;
+        if(document.getElementById('sc-title')) document.getElementById('sc-title').innerText = d.mainTitle || "SnowCast";
+        if(document.getElementById('sc-overview')) document.getElementById('sc-overview').innerText = d.overview || "";
+        c.innerHTML = (d.forecasts||[]).map(f => `
+            <div class="feed-item-card border-${f.riskLevel}">
+                <div class="feed-head"><strong>${f.region}</strong><span class="badge bg-${f.riskLevel}">${f.riskLevel} Risk</span></div>
+                <div class="feed-body">
+                    <p style="font-size:0.85rem; color:var(--secondary); font-weight:700; margin-bottom:10px;">Valid: ${new Date(safeDate(f.validFrom)).toLocaleString()} - ${new Date(safeDate(f.validTo)).toLocaleString()}</p>
+                    <p>${f.summary}</p>
+                </div>
+            </div>`).join('');
+    },
+    renderDrought: () => {
+        const d = app.sessionData.drought;
+        const c = document.getElementById('dc-feed');
+        if(!d || !c) return;
+        if(document.getElementById('dc-title')) document.getElementById('dc-title').innerText = d.overview?.title || "DroughtCast";
+        if(document.getElementById('dc-summary-text')) document.getElementById('dc-summary-text').innerText = d.overview?.summary || "";
+        c.innerHTML = (d.alerts||[]).map(a => `
+            <div class="feed-item-card" style="border-left:8px solid #d97706;">
+                <div class="feed-head"><strong>${a.region}</strong><span class="badge" style="background:#d97706; color:white;">${a.severity}</span></div>
+                <div class="feed-body">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; background:#fff7ed; padding:10px; border-radius:8px; font-size:0.85rem; margin-bottom:15px; border:1px solid #ffedd5;">
+                        <div><strong>Rain Potential:</strong> ${a.rainPotential}</div>
+                        <div><strong>Expires:</strong> ${new Date(safeDate(a.endDate)).toLocaleDateString()}</div>
+                    </div>
+                    <p>${a.summary}</p>
+                </div>
+            </div>`).join('');
+    },
+    fetchNews: () => {
+        const s = document.createElement('script');
+        s.src = `https://southislandmet.blogspot.com/feeds/posts/default?alt=json-in-script&callback=handleBloggerData&t=${Date.now()}`;
+        document.body.appendChild(s);
+    },
+    renderNewsFeeds: () => {
+        const mkItem = (i) => `<a href="article?slug=${i.slug}" class="news-card"><div class="nc-thumb" style="background-image:url('${i.image}')"></div><div class="nc-body"><div style="font-weight:800;">${i.title}</div><div style="font-size:0.8rem; color:var(--secondary);">${new Date(i.pubDate).toLocaleDateString()}</div></div></a>`;
+        const homeFeed = document.getElementById('home-news-feed');
+        if(homeFeed) homeFeed.innerHTML = app.newsCache.slice(0,3).map(mkItem).join('');
+        const fullFeed = document.getElementById('news-feed');
+        if(fullFeed) fullFeed.innerHTML = app.newsCache.map(mkItem).join('');
+    },
+    renderArticle: (slug) => {
+        const item = app.newsCache.find(n => n.slug === slug);
+        const container = document.getElementById('reader-content');
+        if(item && container) {
+            const div = document.createElement('div');
+            div.innerHTML = item.description;
+            const bodyImgs = div.querySelectorAll('img');
+            if (bodyImgs.length > 0 && item.image !== 'logo.png') {
+                const heroFile = item.image.split('/').pop().split(/[?#]/)[0];
+                const bodyFile = bodyImgs[0].src.split('/').pop().split(/[?#]/)[0];
+                if (heroFile === bodyFile || item.image.includes(bodyFile)) {
+                    bodyImgs[0].remove();
+                }
+            }
+            container.innerHTML = `
+                <article class="article-body">
+                    <h1 class="article-title">${item.title}</h1>
+                    <div class="article-meta">Published on ${new Date(item.pubDate).toLocaleDateString(undefined, {dateStyle:'long'})}</div>
+                    <img src="${item.image}" class="article-main-img">
+                    <div class="article-text">${div.innerHTML}</div>
+                </article>
+            `;
+            document.title = item.title + " - SIMA";
+        } else if(container) {
+            container.innerHTML = "<p style='text-align:center; padding:50px;'>Article not found.</p>";
+        }
+    }
+};
+
+// -------------------------------------------------------------------------
+// Full Interactive Map & Town logic
+// -------------------------------------------------------------------------
+const siWidget = (function(){
+    const towns=[{name:"Nelson",lat:-41.27,lng:173.28},{name:"Blenheim",lat:-41.51,lng:173.96},{name:"Westport",lat:-41.75,lng:171.60},{name:"Greymouth",lat:-42.45,lng:171.20},{name:"Kaikoura",lat:-42.40,lng:173.68},{name:"Christchurch",lat:-43.53,lng:172.63},{name:"Rolleston",lat:-43.59,lng:172.38},{name:"Ashburton",lat:-43.90,lng:171.75},{name:"Timaru",lat:-44.39,lng:171.25},{name:"Oamaru",lat:-45.09,lng:170.97},{name:"Queenstown",lat:-45.03,lng:168.66},{name:"Wanaka",lat:-44.70,lng:169.15},{name:"Alexandra",lat:-45.25,lng:169.38},{name:"Dunedin",lat:-45.87,lng:170.50},{name:"Invercargill",lat:-46.41,lng:168.35},{name:"Stewart Is.",lat:-46.89,lng:168.12}];
+    let map;
+    function init(){
+        const s=document.getElementById('si-town-search'), r=document.getElementById('si-search-results');
+        if(s){
+            s.addEventListener('input',e=>{
+                const v=e.target.value.toLowerCase();
+                if(v.length<2){r.style.display='none';return;}
+                const m=towns.filter(t=>t.name.toLowerCase().includes(v));
+                r.innerHTML=m.map(t=>`<div class="si-res-item" onclick="siWidget.load('${t.name}')">${t.name}</div>`).join('');
+                r.style.display=m.length?'block':'none';
+            });
+            setTimeout(initMap,200); updateExtremes();
+        }
+    }
+    function load(n){ const t=towns.find(x=>x.name===n); if(t) fetchMeteo(t); document.getElementById('si-search-results').style.display='none'; document.getElementById('si-town-search').value=''; }
+    async function fetchMeteo(t){
+        const u=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lng}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Pacific%2FAuckland&t=${Date.now()}`;
+        try {
+            const r=await fetch(u); const d=await r.json();
+            document.getElementById('fm-town').innerText=t.name;
+            let html = '';
+            d.daily.time.slice(0,5).forEach((day, i) => {
+                const code = d.daily.weather_code[i], mm = d.daily.precipitation_sum[i], pop = d.daily.precipitation_probability_max[i];
+                html += `
+                <div class="fc-card">
+                    <div class="fc-card-date">
+                        <span class="fc-day">${new Date(day).toLocaleDateString('en-NZ', {weekday:'long'})}</span>
+                        <span class="fc-date-sub">${new Date(day).toLocaleDateString('en-NZ', {day:'numeric', month:'short'})}</span>
+                    </div>
+                    <div class="fc-main">
+                        <div class="fc-icon">${getIcon(code)}</div>
+                        <div class="fc-desc">${interpretForecast(code, mm, pop)}</div>
+                    </div>
+                    <div class="fc-metrics">
+                        <span class="fc-temp">${Math.round(d.daily.temperature_2m_max[i])}° / ${Math.round(d.daily.temperature_2m_min[i])}°</span>
+                        <div>💧 ${pop}% Probability</div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('fm-content').innerHTML=html;
+            document.getElementById('fc-modal-overlay').style.display='flex';
+        } catch(e) { console.error(e); }
+    }
+    function initMap(){
+        if(!document.getElementById('si-map')) return;
+        map=L.map('si-map',{zoomControl:false}).setView([-43.5,171.5],6);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+        towns.forEach(t=>{ L.circleMarker([t.lat,t.lng],{color:'#0ea5e9',fillColor:'#0ea5e9',fillOpacity:0.8,radius:8}).addTo(map).on('click',()=>fetchMeteo(t)); });
+    }
+    async function updateExtremes(){
+        const res = await Promise.all(towns.map(t => fetch(`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lng}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_gusts_10m_max&timezone=Pacific%2FAuckland&t=${Date.now()}`).then(r=>r.json()).then(d=>({t,d}))));
+        let mx=-100, mn=100, wg=0, rn=0, lmx, lmn, lwg, lrn;
+        res.forEach(({t,d}) => {
+            const day = d.daily;
+            if(day.temperature_2m_max[0] > mx){ mx=day.temperature_2m_max[0]; lmx=t.name; }
+            if(day.temperature_2m_min[0] < mn){ mn=day.temperature_2m_min[0]; lmn=t.name; }
+            if(day.wind_gusts_10m_max[0] > wg){ wg=day.wind_gusts_10m_max[0]; lwg=t.name; }
+            if(day.precipitation_sum[0] > rn){ rn=day.precipitation_sum[0]; lrn=t.name; }
+        });
+        if(document.getElementById('ex-max')) { document.getElementById('ex-max').innerText=mx.toFixed(1)+'°'; document.getElementById('ex-max-loc').innerText=lmx; }
+        if(document.getElementById('ex-min')) { document.getElementById('ex-min').innerText=mn.toFixed(1)+'°'; document.getElementById('ex-min-loc').innerText=lmn; }
+        if(document.getElementById('ex-wind')) { document.getElementById('ex-wind').innerText=wg.toFixed(0)+' kph'; document.getElementById('ex-wind-loc').innerText=lwg; }
+        if(document.getElementById('ex-rain')) { document.getElementById('ex-rain').innerText=rn.toFixed(1)+' mm'; document.getElementById('ex-rain-loc').innerText=lrn; }
+    }
+    return {init, load};
+})();
+
+// Mobile Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const menuToggle = document.querySelector('.menu-toggle');
+    const mobileMenu = document.querySelector('.m-menu');
+    if(menuToggle && mobileMenu) {
+        menuToggle.addEventListener('click', (e) => {
+            const isOpen = mobileMenu.classList.toggle('open');
+            menuToggle.innerHTML = isOpen ? 'CLOSE' : `<div class="hamburger-icon"><span></span><span></span><span></span></div> MENU`;
+            document.body.classList.toggle('menu-active', isOpen);
+        });
+    }
+});
